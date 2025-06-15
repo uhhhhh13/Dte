@@ -23,11 +23,6 @@ local Window = Rayfield:CreateWindow({
    KeySystem = false
 })
 
--- Original Script Code (Unchanged)
--- [Insert all the original variables, services, utility functions, Auto_Parry system, animation handling, and other core logic here]
--- For brevity, I'm not repeating the entire original code, but it should be placed here.
--- All the functions like Auto_Parry.Parry, Auto_Parry.Get_Ball, applySkybox, playMusic, etc., remain unchanged.
-
 -- Services
 local ContextActionService = game:GetService('ContextActionService')
 local UserInputService = cloneref and cloneref(game:GetService('UserInputService')) or game:GetService('UserInputService')
