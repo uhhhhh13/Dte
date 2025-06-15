@@ -1,31 +1,62 @@
--- Services
-local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local CoreGui = game:GetService("CoreGui")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
-local Stats = game:GetService("Stats")
-local VirtualInputManager = game:GetService("VirtualInputManager")
-local Lighting = game:GetService("Lighting")
-local Debris = game:GetService("Debris")
-local ContextActionService = game:GetService("ContextActionService")
-local GuiService = game:GetService("GuiService")
-local ContentProvider = game:GetService("ContentProvider")
-local HttpService = game:GetService("HttpService")
-local TextService = game:GetService("TextService")
+debugX = true
 
--- Local Player
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "Kryp Paid Hub",
+   Icon = 4483362458,
+   LoadingTitle = "Kryp Paid Interface",
+   LoadingSubtitle = "Powered by Rayfield",
+   Theme = "Dark",
+   DisableRayfieldPrompts = false,
+   DisableBuildWarnings = false,
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "KrypPaid",
+      FileName = "KrypConfig"
+   },
+   Discord = {
+      Enabled = true,
+      Invite = "your_discord_invite_code",
+      RememberJoins = true
+   },
+   KeySystem = false
+})
+
+-- Original Script Code (Unchanged)
+-- [Insert all the original variables, services, utility functions, Auto_Parry system, animation handling, and other core logic here]
+-- For brevity, I'm not repeating the entire original code, but it should be placed here.
+-- All the functions like Auto_Parry.Parry, Auto_Parry.Get_Ball, applySkybox, playMusic, etc., remain unchanged.
+
+-- Services
+local ContextActionService = game:GetService('ContextActionService')
+local UserInputService = cloneref and cloneref(game:GetService('UserInputService')) or game:GetService('UserInputService')
+local ContentProvider = cloneref and cloneref(game:GetService('ContentProvider')) or game:GetService('ContentProvider')
+local TweenService = cloneref and cloneref(game:GetService('TweenService')) or game:GetService('TweenService')
+local HttpService = cloneref and cloneref(game:GetService('HttpService')) or game:GetService('HttpService')
+local TextService = cloneref and cloneref(game:GetService('TextService')) or game:GetService('TextService')
+local RunService = cloneref and cloneref(game:GetService('RunService')) or game:GetService('RunService')
+local Lighting = cloneref and cloneref(game:GetService('Lighting')) or game:GetService('Lighting')
+local Players = cloneref and cloneref(game:GetService('Players')) or game:GetService('Players')
+local CoreGui = cloneref and cloneref(game:GetService('CoreGui')) or game:GetService('CoreGui')
+local Debris = cloneref and cloneref(game:GetService('Debris')) or game:GetService('Debris')
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local GuiService = game:GetService('GuiService')
+
+-- Local Player Variables
 local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService('ReplicatedStorage')
+local Stats = game:GetService("Stats")
 local clientCharacter = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 local clientHumanoid = clientCharacter:FindFirstChildOfClass("Humanoid")
+local AliveGroup = Workspace:FindFirstChild("Alive")
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local Hotbar = PlayerGui:WaitForChild("Hotbar")
-local ParryCD = Hotbar.Block.UIGradient
-local AbilityCD = Hotbar.Ability.UIGradient
+local ParryCD = PlayerGui.Hotbar.Block.UIGradient
+local AbilityCD = PlayerGui.Hotbar.Ability.UIGradient
 
--- Original Variables (from old UI)
+-- Original Variables
 local Phantom = false
 local Tornado_Time = tick()
 local Last_Input = UserInputService:GetLastInputType()
@@ -62,6 +93,8 @@ local Training_Parried = false
 local CosmeticsActive = false
 local hit_Sound_Enabled = false
 local headLoop = nil
+
+-- Visuals Variables
 local espEnabled = false
 local espConnections = {}
 local nameTagsEnabled = false
@@ -77,6 +110,8 @@ local originalLighting = {
 }
 local crosshairEnabled = false
 local crosshairGui = nil
+
+-- New Variables for Additions
 local musicPlayer = nil
 local skyboxConnection = nil
 local shaderConnection = nil
@@ -85,27 +120,30 @@ local currentShader = nil
 local skyColorConnection = nil
 local BallPauseEnabled = false
 local BallPauseDistanceThreshold = 10
-local AutoManualSpamEnabled = false
-local ManualSpamActive = false
 
--- Flags (simulating Library.Flags)
-local Flags = {
-    CurveType = "Camera",
-    RandomParryAccuracy = false,
-    InfinityDetection = false,
-    AutoParryKeypress = false,
-    PhantomDetection = false,
-    AutoAbility = false,
-    CooldownProtection = false,
-    SpamParryKeypress = false,
-    LobbyAPRandomParryAccuracy = false,
-    LobbyAPKeypress = false,
-    Spinbot = false,
-    CameraEnabled = false,
-    ManualSpamUI = false
-}
+-- Remote Detection
+task.spawn(function()
+    for _, value in pairs(getgc()) do
+        if type(value) == "function" and islclosure(value) then
+            local protos = debug.getprotos(value)
+            local upvalues = debug.getupvalues(value)
+            local constants = debug.getconstants(value)
+            if #protos == 4 and #upvalues == 24 and #constants >= 102 then
+                Parry_Key = debug.getupvalue(value, 17)
+                Parry_Remote = debug.getupvalue(value, 18)
+                Parry_Arg = debug.getconstant(value, 64)
+                break
+            end
+        end
+    end
+    if not Parry_Remote then
+        warn("[Parry Remote Detection] Failed to find Parry_Remote")
+    else
+        print("[Parry Remote Detection] Success: Remote =", Parry_Remote and Parry_Remote.Name or "nil", "Key =", Parry_Key, "Arg =", Parry_Arg)
+    end
+end)
 
--- Utility Functions (from old UI)
+-- Utility Functions
 local function BlockMovement(actionName, inputState, inputObject)
     return Enum.ContextActionResult.Sink
 end
@@ -129,23 +167,57 @@ local function performFirstPress(parryType)
     end
 end
 
+if not LPH_OBFUSCATED then
+    function LPH_JIT(Function) return Function end
+    function LPH_JIT_MAX(Function) return Function end
+    function LPH_NO_VIRTUALIZE(Function) return Function end
+end
+
 function create_animation(object, info, value)
     local animation = TweenService:Create(object, info, value)
     animation:Play()
     task.wait(info.Time)
     Debris:AddItem(animation, 0)
     animation:Destroy()
+    animation = nil
 end
 
--- Auto Parry System (from old UI)
+-- Animation Handling
+local Animation = {}
+Animation.storage = {}
+Animation.current = nil
+Animation.track = nil
+
+for _, v in pairs(ReplicatedStorage.Misc.Emotes:GetChildren()) do
+    if v:IsA("Animation") and v:GetAttribute("EmoteName") then
+        local Emote_Name = v:GetAttribute("EmoteName")
+        Animation.storage[Emote_Name] = v
+    end
+end
+
+local Emotes_Data = {}
+for Object in pairs(Animation.storage) do
+    table.insert(Emotes_Data, Object)
+end
+table.sort(Emotes_Data)
+
+-- Auto Parry System
 local Auto_Parry = {}
 
 function Auto_Parry.Parry_Animation()
     local Parry_Animation = ReplicatedStorage.Shared.SwordAPI.Collection.Default:FindFirstChild('GrabParry')
     local Current_Sword = LocalPlayer.Character:GetAttribute('CurrentlyEquippedSword')
-    if not Current_Sword or not Parry_Animation then return end
+
+    if not Current_Sword or not Parry_Animation then
+        return
+    end
+
     local Sword_Data = ReplicatedStorage.Shared.ReplicatedInstances.Swords.GetSword:Invoke(Current_Sword)
-    if not Sword_Data or not Sword_Data['AnimationType'] then return end
+
+    if not Sword_Data or not Sword_Data['AnimationType'] then
+        return
+    end
+
     for _, object in pairs(ReplicatedStorage.Shared.SwordAPI.Collection:GetChildren()) do
         if object.Name == Sword_Data['AnimationType'] then
             if object:FindFirstChild('GrabParry') or object:FindFirstChild('Grab') then
@@ -154,15 +226,20 @@ function Auto_Parry.Parry_Animation()
             end
         end
     end
+
     Grab_Parry = LocalPlayer.Character.Humanoid.Animator:LoadAnimation(Parry_Animation)
     Grab_Parry:Play()
 end
 
 function Auto_Parry.Play_Animation(v)
     local Animations = Animation.storage[v]
-    if not Animations then return false end
+    if not Animations then
+        return false
+    end
     local Animator = LocalPlayer.Character.Humanoid.Animator
-    if Animation.track then Animation.track:Stop() end
+    if Animation.track then
+        Animation.track:Stop()
+    end
     Animation.track = Animator:LoadAnimation(Animations)
     Animation.track:Play()
     Animation.current = v
@@ -218,7 +295,9 @@ end
 
 function Auto_Parry:Get_Entity_Properties()
     Auto_Parry.Closest_Player()
-    if not Closest_Entity then return false end
+    if not Closest_Entity then
+        return false
+    end
     local Entity_Velocity = Closest_Entity.PrimaryPart.Velocity
     local Entity_Direction = (LocalPlayer.Character.PrimaryPart.Position - Closest_Entity.PrimaryPart.Position).Unit
     local Entity_Distance = (LocalPlayer.Character.PrimaryPart.Position - Closest_Entity.PrimaryPart.Position).Magnitude
@@ -323,17 +402,20 @@ function Auto_Parry.Parry(parryType)
         warn("[Auto_Parry.Parry] Parry_Remote is nil, cannot parry")
         return false
     end
+
     local Parry_Data = Auto_Parry.Parry_Data(parryType or Selected_Parry_Type)
     if not Parry_Data then
         warn("[Auto_Parry.Parry] Failed to get Parry_Data")
         return false
     end
+
     local Hash
     if type(Parry_Arg) == "string" and string.match(Parry_Arg, "PARRY_HASH_FAKE") then
         Hash = nil
     else
         Hash = Parry_Arg
     end
+
     local success, err = pcall(function()
         Parry_Remote:FireServer(Hash, Parry_Key, Parry_Data[1], Parry_Data[2], Parry_Data[3], Parry_Data[4])
     end)
@@ -341,19 +423,23 @@ function Auto_Parry.Parry(parryType)
         warn("[Auto_Parry.Parry] Failed to fire remote:", err)
         return false
     end
+
     if not firstParryFired then
         performFirstPress(firstParryType)
         firstParryFired = true
     end
+
     if Parries > 7 then
         return false
     end
+
     Parries = Parries + 1
     task.delay(0.55, function()
         if Parries > 0 then
             Parries = Parries - 1
         end
     end)
+
     return true
 end
 
@@ -363,9 +449,13 @@ end
 
 function Auto_Parry.Is_Curved()
     local Ball = Auto_Parry.Get_Ball()
-    if not Ball then return false end
+    if not Ball then
+        return false
+    end
     local Zoomies = Ball:FindFirstChild('zoomies')
-    if not Zoomies then return false end
+    if not Zoomies then
+        return false
+    end
     local Velocity = Zoomies.VectorVelocity
     local Ball_Direction = Velocity.Unit
     local Direction = (LocalPlayer.Character.PrimaryPart.Position - Ball.Position).Unit
@@ -480,7 +570,7 @@ local function AutoAbility()
     return false
 end
 
--- Additional Functions (from old UI)
+-- New Functions for Additions
 local function applySkyColor(color)
     Lighting.Ambient = color
     Lighting.OutdoorAmbient = color
@@ -604,1417 +694,1538 @@ local function pauseBall()
     end
 end
 
--- Animation Handling
-local Animation = {}
-Animation.storage = {}
-Animation.current = nil
-Animation.track = nil
-
-for _, v in pairs(ReplicatedStorage.Misc.Emotes:GetChildren()) do
-    if v:IsA("Animation") and v:GetAttribute("EmoteName") then
-        local Emote_Name = v:GetAttribute("EmoteName")
-        Animation.storage[Emote_Name] = v
-    end
-end
-
-local Emotes_Data = {}
-for Object in pairs(Animation.storage) do
-    table.insert(Emotes_Data, Object)
-end
-table.sort(Emotes_Data)
-
--- GUI Creation
-local VisualUI = Instance.new("ScreenGui")
-VisualUI.Name = "VisualUI"
-VisualUI.ResetOnSpawn = false
-VisualUI.Parent = CoreGui
-VisualUI.IgnoreGuiInset = true
-
--- Main Frame
-local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 600, 0, 400)
-MainFrame.Position = UDim2.new(0.5, -300, 0.5, -200)
-MainFrame.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
-MainFrame.BackgroundTransparency = 0.8
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.Parent = VisualUI
-
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 12)
-UICorner.Parent = MainFrame
-
-local UIStroke = Instance.new("UIStroke")
-UIStroke.Thickness = 2
-UIStroke.Color = Color3.new(1, 1, 1)
-UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-UIStroke.Parent = MainFrame
-
-local UIGlow = Instance.new("UIStroke")
-UIGlow.Thickness = 4
-UIGlow.Color = Color3.new(1, 1, 1)
-UIGlow.Transparency = 0.5
-UIGlow.Parent = MainFrame
-
--- Square Box (Right)
-local SquareBox = Instance.new("Frame")
-SquareBox.Size = UDim2.new(0, 300, 0, 300)
-SquareBox.Position = UDim2.new(1, 10, 0.5, -150)
-SquareBox.BackgroundColor3 = Color3.fromRGB(9, 9, 9)
-SquareBox.BackgroundTransparency = 0.8
-SquareBox.BorderSizePixel = 0
-SquareBox.Parent = MainFrame
-
-local SquareUICorner = Instance.new("UICorner")
-SquareUICorner.CornerRadius = UDim.new(0, 12)
-SquareUICorner.Parent = SquareBox
-
-local SquareUIStroke = Instance.new("UIStroke")
-SquareUIStroke.Thickness = 2
-SquareUIStroke.Color = Color3.new(1, 1, 1)
-SquareUIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-SquareUIStroke.Parent = SquareBox
-
--- Rectangle Box (Left of Square)
-local RectangleBox = Instance.new("Frame")
-RectangleBox.Size = UDim2.new(0, 100, 0, 350)
-RectangleBox.Position = UDim2.new(1, -420, 0.5, -175)
-RectangleBox.BackgroundColor3 = Color3.fromRGB(9, 9, 9)
-RectangleBox.BackgroundTransparency = 0.8
-RectangleBox.BorderSizePixel = 0
-RectangleBox.Parent = MainFrame
-
-local RectUICorner = Instance.new("UICorner")
-RectUICorner.CornerRadius = UDim.new(0, 12)
-RectUICorner.Parent = RectangleBox
-
-local RectUIStroke = Instance.new("UIStroke")
-RectUIStroke.Thickness = 2
-RectUIStroke.Color = Color3.new(1, 1, 1)
-RectUIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-RectUIStroke.Parent = RectangleBox
-
--- Window Controls
-local ControlFrame = Instance.new("Frame")
-ControlFrame.Size = UDim2.new(1, 0, 0, 30)
-ControlFrame.BackgroundTransparency = 1
-ControlFrame.Parent = MainFrame
-
--- MacOS-style Circles (Top Left)
-local RedCircle = Instance.new("Frame")
-RedCircle.Size = UDim2.new(0, 12, 0, 12)
-RedCircle.Position = UDim2.new(0, 10, 0.5, -6)
-RedCircle.BackgroundColor3 = Color3.fromRGB(255, 69, 58)
-RedCircle.BorderSizePixel = 0
-RedCircle.Parent = ControlFrame
-
-local RedUICorner = Instance.new("UICorner")
-RedUICorner.CornerRadius = UDim.new(1, 0)
-RedUICorner.Parent = RedCircle
-
-local OrangeCircle = Instance.new("Frame")
-OrangeCircle.Size = UDim2.new(0, 12, 0, 12)
-OrangeCircle.Position = UDim2.new(0, 26, 0.5, -6)
-OrangeCircle.BackgroundColor3 = Color3.fromRGB(255, 159, 10)
-OrangeCircle.BorderSizePixel = 0
-OrangeCircle.Parent = ControlFrame
-
-local OrangeUICorner = Instance.new("UICorner")
-OrangeUICorner.CornerRadius = UDim.new(1, 0)
-OrangeUICorner.Parent = OrangeCircle
-
-local GreenCircle = Instance.new("Frame")
-GreenCircle.Size = UDim2.new(0, 12, 0, 12)
-GreenCircle.Position = UDim2.new(0, 42, 0.5, -6)
-GreenCircle.BackgroundColor3 = Color3.fromRGB(40, 205, 65)
-GreenCircle.BorderSizePixel = 0
-GreenCircle.Parent = ControlFrame
-
-local GreenUICorner = Instance.new("UICorner")
-GreenUICorner.CornerRadius = UDim.new(1, 0)
-GreenUICorner.Parent = GreenCircle
-
--- Window Buttons (Top Right)
-local CloseButton = Instance.new("TextButton")
-CloseButton.Size = UDim2.new(0, 30, 0, 30)
-CloseButton.Position = UDim2.new(1, -30, 0, 0)
-CloseButton.BackgroundTransparency = 1
-CloseButton.Text = "X"
-CloseButton.TextColor3 = Color3.new(1, 1, 1)
-CloseButton.Font = Enum.Font.GothamBold
-CloseButton.TextSize = 14
-CloseButton.Parent = ControlFrame
-
-local MinimizeButton = Instance.new("TextButton")
-MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
-MinimizeButton.Position = UDim2.new(1, -60, 0, 0)
-MinimizeButton.BackgroundTransparency = 1
-MinimizeButton.Text = "-"
-MinimizeButton.TextColor3 = Color3.new(1, 1, 1)
-MinimizeButton.Font = Enum.Font.GothamBold
-MinimizeButton.TextSize = 14
-MinimizeButton.Parent = ControlFrame
-
-local MaximizeButton = Instance.new("TextButton")
-MaximizeButton.Size = UDim2.new(0, 30, 0, 30)
-MaximizeButton.Position = UDim2.new(1, -90, 0, 0)
-MaximizeButton.BackgroundTransparency = 1
-MaximizeButton.Text = "[]"
-MaximizeButton.TextColor3 = Color3.new(1, 1, 1)
-MaximizeButton.Font = Enum.Font.GothamBold
-MaximizeButton.TextSize = 14
-MaximizeButton.Parent = ControlFrame
-
--- Close Confirmation Dialog
-local CloseDialog = Instance.new("Frame")
-CloseDialog.Size = UDim2.new(0, 300, 0, 150)
-CloseDialog.Position = UDim2.new(0.5, -150, 0.5, -75)
-CloseDialog.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
-CloseDialog.BackgroundTransparency = 0
-CloseDialog.BorderSizePixel = 0
-CloseDialog.Visible = false
-CloseDialog.Parent = MainFrame
-
-local DialogUICorner = Instance.new("UICorner")
-DialogUICorner.CornerRadius = UDim.new(0, 12)
-DialogUICorner.Parent = CloseDialog
-
-local DialogText = Instance.new("TextLabel")
-DialogText.Size = UDim2.new(1, 0, 0, 50)
-DialogText.Position = UDim2.new(0, 0, 0, 20)
-DialogText.BackgroundTransparency = 1
-DialogText.Text = "Are you sure you want to close Visual?"
-DialogText.TextColor3 = Color3.new(1, 1, 1)
-DialogText.Font = Enum.Font.Gotham
-DialogText.TextSize = 16
-DialogText.Parent = CloseDialog
-
-local YesButton = Instance.new("TextButton")
-YesButton.Size = UDim2.new(0, 100, 0, 40)
-YesButton.Position = UDim2.new(0, 50, 0, 80)
-YesButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-YesButton.Text = "Yes"
-YesButton.TextColor3 = Color3.new(1, 1, 1)
-YesButton.Font = Enum.Font.GothamBold
-YesButton.TextSize = 14
-YesButton.Parent = CloseDialog
-
-local YesUICorner = Instance.new("UICorner")
-YesUICorner.CornerRadius = UDim.new(0, 8)
-YesUICorner.Parent = YesButton
-
-local NoButton = Instance.new("TextButton")
-NoButton.Size = UDim2.new(0, 100, 0, 40)
-NoButton.Position = UDim2.new(0, 150, 0, 80)
-NoButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-NoButton.Text = "No"
-NoButton.TextColor3 = Color3.new(1, 1, 1)
-NoButton.Font = Enum.Font.GothamBold
-NoButton.TextSize = 14
-NoButton.Parent = CloseDialog
-
-local NoUICorner = Instance.new("UICorner")
-NoUICorner.CornerRadius = UDim.new(0, 8)
-NoUICorner.Parent = NoButton
-
--- Minimized Frame
-local MinimizedFrame = Instance.new("Frame")
-MinimizedFrame.Size = UDim2.new(0, 200, 0, 40)
-MinimizedFrame.Position = UDim2.new(0.5, -100, 0.9, -20)
-MinimizedFrame.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
-MinimizedFrame.BackgroundTransparency = 0.8
-MinimizedFrame.BorderSizePixel = 0
-MinimizedFrame.Active = true
-MinimizedFrame.Draggable = true
-MinimizedFrame.Visible = false
-MinimizedFrame.Parent = VisualUI
-
-local MinUICorner = Instance.new("UICorner")
-MinUICorner.CornerRadius = UDim.new(0, 12)
-MinUICorner.Parent = MinimizedFrame
-
-local MinUIStroke = Instance.new("UIStroke")
-MinUIStroke.Thickness = 2
-MinUIStroke.Color = Color3.new(1, 1, 1)
-MinUIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-MinUIStroke.Parent = MinimizedFrame
-
-local MinCloseButton = Instance.new("TextButton")
-MinCloseButton.Size = UDim2.new(0, 30, 0, 30)
-MinCloseButton.Position = UDim2.new(1, -30, 0, 5)
-MinCloseButton.BackgroundTransparency = 1
-MinCloseButton.Text = "X"
-MinCloseButton.TextColor3 = Color3.new(1, 1, 1)
-MinCloseButton.Font = Enum.Font.GothamBold
-MinCloseButton.TextSize = 14
-MinCloseButton.Parent = MinimizedFrame
-
-local UnminimizeButton = Instance.new("TextButton")
-UnminimizeButton.Size = UDim2.new(0, 30, 0, 30)
-UnminimizeButton.Position = UDim2.new(1, -60, 0, 5)
-UnminimizeButton.BackgroundTransparency = 1
-UnminimizeButton.Text = "+"
-UnminimizeButton.TextColor3 = Color3.new(1, 1, 1)
-UnminimizeButton.Font = Enum.Font.GothamBold
-UnminimizeButton.TextSize = 14
-UnminimizeButton.Parent = MinimizedFrame
-
--- Tab Container
-local TabContainer = Instance.new("Frame")
-TabContainer.Size = UDim2.new(0, 100, 1, -30)
-TabContainer.Position = UDim2.new(0, 0, 0, 30)
-TabContainer.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-TabContainer.BackgroundTransparency = 0.8
-TabContainer.Parent = MainFrame
-
-local TabListLayout = Instance.new("UIListLayout")
-TabListLayout.FillDirection = Enum.FillDirection.Vertical
-TabListLayout.Padding = UDim.new(0, 5)
-TabListLayout.Parent = TabContainer
-
--- Content Container
-local ContentContainer = Instance.new("Frame")
-ContentContainer.Size = UDim2.new(1, -100, 1, -30)
-ContentContainer.Position = UDim2.new(0, 100, 0, 30)
-ContentContainer.BackgroundTransparency = 1
-ContentContainer.Parent = MainFrame
-
--- Tab Management
-local Tabs = {}
-local function CreateTab(name)
-    local TabButton = Instance.new("TextButton")
-    TabButton.Size = UDim2.new(1, 0, 0, 40)
-    TabButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    TabButton.BackgroundTransparency = 0.8
-    TabButton.Text = name
-    TabButton.TextColor3 = Color3.new(1, 1, 1)
-    TabButton.Font = Enum.Font.GothamBold
-    TabButton.TextSize = 14
-    TabButton.Parent = TabContainer
-
-    local TabUICorner = Instance.new("UICorner")
-    TabUICorner.CornerRadius = UDim.new(0, 8)
-    TabUICorner.Parent = TabButton
-
-    local ContentFrame = Instance.new("Frame")
-    ContentFrame.Size = UDim2.new(1, 0, 1, 0)
-    ContentFrame.BackgroundTransparency = 1
-    ContentFrame.Visible = false
-    ContentFrame.Parent = ContentContainer
-
-    local ContentListLayout = Instance.new("UIListLayout")
-    ContentListLayout.FillDirection = Enum.FillDirection.Vertical
-    ContentListLayout.Padding = UDim.new(0, 10)
-    ContentListLayout.Parent = ContentFrame
-
-    TabButton.MouseButton1Click:Connect(function()
-        for _, tab in pairs(Tabs) do
-            tab.Content.Visible = false
-            tab.Button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-        end
-        ContentFrame.Visible = true
-        TabButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    end)
-
-    local Sections = {}
-    local function CreateSection(sectionName)
-        local SectionFrame = Instance.new("Frame")
-        SectionFrame.Size = UDim2.new(1, -20, 0, 0)
-        SectionFrame.Position = UDim2.new(0, 10, 0, 0)
-        SectionFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-        SectionFrame.BackgroundTransparency = 0.8
-        SectionFrame.AutomaticSize = Enum.AutomaticSize.Y
-        SectionFrame.Parent = ContentFrame
-
-        local SectionUICorner = Instance.new("UICorner")
-        SectionUICorner.CornerRadius = UDim.new(0, 8)
-        SectionUICorner.Parent = SectionFrame
-
-        local SectionUIStroke = Instance.new("UIStroke")
-        SectionUIStroke.Thickness = 1
-        SectionUIStroke.Color = Color3.new(1, 1, 1)
-        SectionUIStroke.Parent = SectionFrame
-
-        local SectionTitle = Instance.new("TextLabel")
-        SectionTitle.Size = UDim2.new(1, 0, 0, 30)
-        SectionTitle.BackgroundTransparency = 1
-        SectionTitle.Text = sectionName
-        SectionTitle.TextColor3 = Color3.new(1, 1, 1)
-        SectionTitle.Font = Enum.Font.GothamBold
-        SectionTitle.TextSize = 16
-        SectionTitle.Parent = SectionFrame
-
-        local SectionContent = Instance.new("Frame")
-        SectionContent.Size = UDim2.new(1, -10, 0, 0)
-        SectionContent.Position = UDim2.new(0, 5, 0, 30)
-        SectionContent.BackgroundTransparency = 1
-        SectionContent.AutomaticSize = Enum.AutomaticSize.Y
-        SectionContent.Parent = SectionFrame
-
-        local SectionListLayout = Instance.new("UIListLayout")
-        SectionListLayout.FillDirection = Enum.FillDirection.Vertical
-        SectionListLayout.Padding = UDim.new(0, 5)
-        SectionListLayout.Parent = SectionContent
-
-        local function CreateLabel(text, color)
-            local Label = Instance.new("TextLabel")
-            Label.Size = UDim2.new(1, 0, 0, 30)
-            Label.BackgroundTransparency = 1
-            Label.Text = text
-            Label.TextColor3 = color or Color3.new(1, 1, 1)
-            Label.Font = Enum.Font.Gotham
-            Label.TextSize = 14
-            Label.Parent = SectionContent
-        end
-
-        local function CreateToggle(text, callback, flag)
-            local ToggleFrame = Instance.new("Frame")
-            ToggleFrame.Size = UDim2.new(1, 0, 0, 30)
-            ToggleFrame.BackgroundTransparency = 1
-            ToggleFrame.Parent = SectionContent
-
-            local ToggleLabel = Instance.new("TextLabel")
-            ToggleLabel.Size = UDim2.new(0.8, 0, 1, 0)
-            ToggleLabel.BackgroundTransparency = 1
-            ToggleLabel.Text = text
-            ToggleLabel.TextColor3 = Color3.new(1, 1, 1)
-            ToggleLabel.Font = Enum.Font.Gotham
-            ToggleLabel.TextSize = 14
-            ToggleLabel.Parent = ToggleFrame
-
-            local ToggleButton = Instance.new("TextButton")
-            ToggleButton.Size = UDim2.new(0, 50, 0, 20)
-            ToggleButton.Position = UDim2.new(1, -50, 0.5, -10)
-            ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-            ToggleButton.Text = "Off"
-            ToggleButton.TextColor3 = Color3.new(1, 1, 1)
-            ToggleButton.Font = Enum.Font.Gotham
-            ToggleButton.TextSize = 12
-            ToggleButton.Parent = ToggleFrame
-
-            local ToggleUICorner = Instance.new("UICorner")
-            ToggleUICorner.CornerRadius = UDim.new(0, 10)
-            ToggleUICorner.Parent = ToggleButton
-
-            local state = false
-            ToggleButton.MouseButton1Click:Connect(function()
-                state = not state
-                ToggleButton.Text = state and "On" or "Off"
-                ToggleButton.BackgroundColor3 = state and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(50, 50, 50)
-                if flag then
-                    Flags[flag] = state
-                end
-                if callback then
-                    callback(state)
-                end
-            end)
-        end
-
-        local function CreateSlider(text, default, min, max, callback)
-            local SliderFrame = Instance.new("Frame")
-            SliderFrame.Size = UDim2.new(1, 0, 0, 50)
-            SliderFrame.BackgroundTransparency = 1
-            SliderFrame.Parent = SectionContent
-
-            local SliderLabel = Instance.new("TextLabel")
-            SliderLabel.Size = UDim2.new(1, 0, 0, 20)
-            SliderLabel.BackgroundTransparency = 1
-            SliderLabel.Text = text .. ": " .. default
-            SliderLabel.TextColor3 = Color3.new(1, 1, 1)
-            SliderLabel.Font = Enum.Font.Gotham
-            SliderLabel.TextSize = 14
-            SliderLabel.Parent = SliderFrame
-
-            local SliderBar = Instance.new("Frame")
-            SliderBar.Size = UDim2.new(1, -10, 0, 10)
-            SliderBar.Position = UDim2.new(0, 5, 0, 30)
-            SliderBar.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-            SliderBar.Parent = SliderFrame
-
-            local SliderUICorner = Instance.new("UICorner")
-            SliderUICorner.CornerRadius = UDim.new(0, 5)
-            SliderUICorner.Parent = SliderBar
-
-            local SliderFill = Instance.new("Frame")
-            SliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-            SliderFill.BackgroundColor3 = Color3.new(1, 1, 1)
-            SliderFill.Parent = SliderBar
-
-            local FillUICorner = Instance.new("UICorner")
-            FillUICorner.CornerRadius = UDim.new(0, 5)
-            FillUICorner.Parent = SliderFill
-
-            local SliderButton = Instance.new("TextButton")
-            SliderButton.Size = UDim2.new(0, 20, 0, 20)
-            SliderButton.Position = UDim2.new((default - min) / (max - min), -10, 0.5, -10)
-            SliderButton.BackgroundColor3 = Color3.new(1, 1, 1)
-            SliderButton.Text = ""
-            SliderButton.Parent = SliderBar
-
-            local ButtonUICorner = Instance.new("UICorner")
-            ButtonUICorner.CornerRadius = UDim.new(1, 0)
-            ButtonUICorner.Parent = SliderButton
-
-            local dragging = false
-            SliderButton.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    dragging = true
-                end
-            end)
-            SliderButton.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    dragging = false
-                end
-            end)
-            UserInputService.InputChanged:Connect(function(input)
-                if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                    local relativeX = math.clamp((input.Position.X - SliderBar.AbsolutePosition.X) / SliderBar.AbsoluteSize.X, 0, 1)
-                    local value = min + (max - min) * relativeX
-                    value = math.floor(value + 0.5)
-                    SliderFill.Size = UDim2.new(relativeX, 0, 1, 0)
-                    SliderButton.Position = UDim2.new(relativeX, -10, 0.5, -10)
-                    SliderLabel.Text = text .. ": " .. value
-                    if callback then
-                        callback(value)
-                    end
-                end
-            end)
-        end
-
-        local function CreateDropdown(text, list, callback, flag)
-            local DropdownFrame = Instance.new("Frame")
-            DropdownFrame.Size = UDim2.new(1, 0, 0, 30)
-            DropdownFrame.BackgroundTransparency = 1
-            DropdownFrame.Parent = SectionContent
-
-            local DropdownButton = Instance.new("TextButton")
-            DropdownButton.Size = UDim2.new(1, 0, 1, 0)
-            DropdownButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-            DropdownButton.Text = text .. ": " .. list[1]
-            DropdownButton.TextColor3 = Color3.new(1, 1, 1)
-            DropdownButton.Font = Enum.Font.Gotham
-            DropdownButton.TextSize = 14
-            DropdownButton.Parent = DropdownFrame
-
-            local DropdownUICorner = Instance.new("UICorner")
-            DropdownUICorner.CornerRadius = UDim.new(0, 8)
-            DropdownUICorner.Parent = DropdownButton
-
-            local DropdownList = Instance.new("Frame")
-            DropdownList.Size = UDim2.new(1, 0, 0, #list * 30)
-            DropdownList.Position = UDim2.new(0, 0, 1, 0)
-            DropdownList.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-            DropdownList.BackgroundTransparency = 0.8
-            DropdownList.Visible = false
-            DropdownList.Parent = DropdownFrame
-
-            local ListUICorner = Instance.new("UICorner")
-            ListUICorner.CornerRadius = UDim.new(0, 8)
-            ListUICorner.Parent = DropdownList
-
-            local ListLayout = Instance.new("UIListLayout")
-            ListLayout.FillDirection = Enum.FillDirection.Vertical
-            ListLayout.Parent = DropdownList
-
-            for _, item in ipairs(list) do
-                local ItemButton = Instance.new("TextButton")
-                ItemButton.Size = UDim2.new(1, 0, 0, 30)
-                ItemButton.BackgroundTransparency = 1
-                ItemButton.Text = item
-                ItemButton.TextColor3 = Color3.new(1, 1, 1)
-                ItemButton.Font = Enum.Font.Gotham
-                ItemButton.TextSize = 14
-                ItemButton.Parent = DropdownList
-
-                ItemButton.MouseButton1Click:Connect(function()
-                    DropdownButton.Text = text .. ": " .. item
-                    DropdownList.Visible = false
-                    if flag then
-                        Flags[flag] = item
-                    end
-                    if callback then
-                        callback(item)
-                    end
-                end)
-            end
-
-            DropdownButton.MouseButton1Click:Connect(function()
-                DropdownList.Visible = not DropdownList.Visible
-            end)
-        end
-
-        local function CreateButton(text, callback)
-            local Button = Instance.new("TextButton")
-            Button.Size = UDim2.new(1, 0, 0, 30)
-            Button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-            Button.Text = text
-            Button.TextColor3 = Color3.new(1, 1, 1)
-            Button.Font = Enum.Font.GothamBold
-            Button.TextSize = 14
-            Button.Parent = SectionContent
-
-            local ButtonUICorner = Instance.new("UICorner")
-            ButtonUICorner.CornerRadius = UDim.new(0, 8)
-            ButtonUICorner.Parent = Button
-
-            Button.MouseButton1Click:Connect(function()
-                if callback then
-                    callback()
-                end
-            end)
-        end
-
-        local function CreateTextbox(text, placeholder, callback)
-            local TextboxFrame = Instance.new("Frame")
-            TextboxFrame.Size = UDim2.new(1, 0, 0, 30)
-            TextboxFrame.BackgroundTransparency = 1
-            TextboxFrame.Parent = SectionContent
-
-            local Textbox = Instance.new("TextBox")
-            Textbox.Size = UDim2.new(1, 0, 1, 0)
-            Textbox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-            Textbox.Text = ""
-            Textbox.PlaceholderText = placeholder
-            Textbox.TextColor3 = Color3.new(1, 1, 1)
-            Textbox.Font = Enum.Font.Gotham
-            Textbox.TextSize = 14
-            Textbox.Parent = TextboxFrame
-
-            local TextboxUICorner = Instance.new("UICorner")
-            TextboxUICorner.CornerRadius = UDim.new(0, 8)
-            TextboxUICorner.Parent = Textbox
-
-            Textbox.FocusLost:Connect(function(enterPressed)
-                if enterPressed and callback then
-                    callback(Textbox.Text)
-                end
-            end)
-        end
-
-        local function CreateRadioButton(text, options, callback)
-            local RadioFrame = Instance.new("Frame")
-            RadioFrame.Size = UDim2.new(1, 0, 0, 30 * #options)
-            RadioFrame.BackgroundTransparency = 1
-            RadioFrame.Parent = SectionContent
-
-            local selected = options[1]
-            for i, option in ipairs(options) do
-                local RadioButton = Instance.new("TextButton")
-                RadioButton.Size = UDim2.new(1, 0, 0, 30)
-                RadioButton.Position = UDim2.new(0, 0, 0, (i-1)*30)
-                RadioButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-                RadioButton.Text = option .. (selected == option and " [X]" or "")
-                RadioButton.TextColor3 = Color3.new(1, 1, 1)
-                RadioButton.Font = Enum.Font.Gotham
-                RadioButton.TextSize = 14
-                RadioButton.Parent = RadioFrame
-
-                local RadioUICorner = Instance.new("UICorner")
-                RadioUICorner.CornerRadius = UDim.new(0, 8)
-                RadioUICorner.Parent = RadioButton
-
-                RadioButton.MouseButton1Click:Connect(function()
-                    selected = option
-                    for _, btn in ipairs(RadioFrame:GetChildren()) do
-                        if btn:IsA("TextButton") then
-                            btn.Text = btn.Text:gsub(" %[X%]", "")
-                        end
-                    end
-                    RadioButton.Text = option .. " [X]"
-                    if callback then
-                        callback(option)
-                    end
-                end)
-            end
-        end
-
-        local function CreateColorPicker(text, default, callback)
-            local ColorPickerFrame = Instance.new("Frame")
-            ColorPickerFrame.Size = UDim2.new(1, 0, 0, 30)
-            ColorPickerFrame.BackgroundTransparency = 1
-            ColorPickerFrame.Parent = SectionContent
-
-            local ColorButton = Instance.new("TextButton")
-            ColorButton.Size = UDim2.new(0, 30, 0, 30)
-            ColorButton.BackgroundColor3 = default
-            ColorButton.Text = ""
-            ColorButton.Parent = ColorPickerFrame
-
-            local ColorUICorner = Instance.new("UICorner")
-            ColorUICorner.CornerRadius = UDim.new(0, 8)
-            ColorUICorner.Parent = ColorButton
-
-            local ColorLabel = Instance.new("TextLabel")
-            ColorLabel.Size = UDim2.new(0, 100, 1, 0)
-            ColorLabel.Position = UDim2.new(0, 40, 0, 0)
-            ColorLabel.BackgroundTransparency = 1
-            ColorLabel.Text = text
-            ColorLabel.TextColor3 = Color3.new(1, 1, 1)
-            ColorLabel.Font = Enum.Font.Gotham
-            ColorLabel.TextSize = 14
-            ColorLabel.Parent = ColorPickerFrame
-
-            -- Simple color picker simulation
-            ColorButton.MouseButton1Click:Connect(function()
-                -- Placeholder for color picker (not fully implemented due to complexity)
-                local newColor = Color3.fromRGB(math.random(0, 255), math.random(0, 255), math.random(0, 255))
-                ColorButton.BackgroundColor3 = newColor
-                if callback then
-                    callback(newColor)
-                end
-            end)
-        end
-
-        return {
-            Label = CreateLabel,
-            Toggle = CreateToggle,
-            Slider = CreateSlider,
-            Dropdown = CreateDropdown,
-            Button = CreateButton,
-            Textbox = CreateTextbox,
-            RadioButton = CreateRadioButton,
-            ColorPicker = CreateColorPicker
-        }
-    end
-
-    Tabs[name] = { Button = TabButton, Content = ContentFrame, Section = CreateSection }
-    return Tabs[name]
-end
-
--- Smooth Dragging
-local function SmoothDrag(frame)
-    local dragging = false
-    local dragInput, dragStart, startPos
-
-    frame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = frame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
-        end
-    end)
-
-    UserInputService.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-
-    RunService.RenderStepped:Connect(function()
-        if dragging and dragInput then
-            local delta = dragInput.Position - dragStart
-            local newPos = UDim2.new(
-                startPos.X.Scale,
-                startPos.X.Offset + delta.X,
-                startPos.Y.Scale,
-                startPos.Y.Offset + delta.Y
-            )
-            local tween = TweenService:Create(frame, TweenInfo.new(0.1, Enum.EasingStyle.Sine), { Position = newPos })
-            tween:Play()
-        end
-    end)
-end
-
-SmoothDrag(MainFrame)
-SmoothDrag(MinimizedFrame)
-
--- Window Control Logic
-CloseButton.MouseButton1Click:Connect(function()
-    CloseDialog.Visible = true
-end)
-
-MinCloseButton.MouseButton1Click:Connect(function()
-    CloseDialog.Visible = true
-end)
-
-YesButton.MouseButton1Click:Connect(function()
-    local blackHoleTween = TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Sine), {
-        Size = UDim2.new(0, 0, 0, 0),
-        Position = UDim2.new(0.5, 0, 0.5, 0),
-        Transparency = 1
-    })
-    blackHoleTween:Play()
-    blackHoleTween.Completed:Wait()
-    VisualUI:Destroy()
-end)
-
-NoButton.MouseButton1Click:Connect(function()
-    CloseDialog.Visible = false
-end)
-
-MinimizeButton.MouseButton1Click:Connect(function()
-    MainFrame.Visible = false
-    MinimizedFrame.Visible = true
-    local tween = TweenService:Create(MinimizedFrame, TweenInfo.new(0.3, Enum.EasingStyle.Sine), {
-        Size = UDim2.new(0, 200, 0, 40)
-    })
-    tween:Play()
-end)
-
-UnminimizeButton.MouseButton1Click:Connect(function()
-    MinimizedFrame.Visible = false
-    MainFrame.Visible = true
-    local tween = TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Sine), {
-        Size = UDim2.new(0, 600, 0, 400)
-    })
-    tween:Play()
-end)
-
-MaximizeButton.MouseButton1Click:Connect(function()
-    local isMaximized = MainFrame.Size == UDim2.new(1, 0, 1, 0)
-    local tween = TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Sine), {
-        Size = isMaximized and UDim2.new(0, 600, 0, 400) or UDim2.new(1, 0, 1, 0),
-        Position = isMaximized and UDim2.new(0.5, -300, 0.5, -200) or UDim2.new(0, 0, 0, 0)
-    })
-    tween:Play()
-end)
-
--- Persistence Across Respawns
-LocalPlayer.CharacterAdded:Connect(function(character)
-    clientCharacter = character
-    clientHumanoid = character:WaitForChild("Humanoid")
-    VisualUI.Parent = CoreGui
-end)
-
--- Create Tabs
-local BlatantTab = CreateTab("Blatant")
-local PlayerTab = CreateTab("Player")
-local VisualsTab = CreateTab("Visuals")
-local MiscTab = CreateTab("Misc")
-local CreditsTab = CreateTab("Credits")
-
--- Credits Tab
-local CreditsMainSection = CreditsTab.Section("Main Credits")
-CreditsMainSection.Label("Original Script: Kryp Paid Team")
-CreditsMainSection.Label("UI Conversion: Shaman Team")
-
-local CreditsUISection = CreditsTab.Section("UI Credits")
-CreditsUISection.Label("Rain-Design: Shaman UI Library")
-
-local CreditsHelpSection = CreditsTab.Section("Helping Credits")
-CreditsHelpSection.Label("Community: Testing & Feedback")
+-- Auto Spam and Manual Spam Variables
+local AutoSpamActive = false
+local AutoManualSpamEnabled = false
+local ManualSpamActive = false
+
+-- New UI Setup with Rayfield
+local BlatantTab = Window:CreateTab("Blatant", 4483362458)
+local CombatTab = Window:CreateTab("Combat", 4483362458) -- New tab for combat-related features
+local PlayerTab = Window:CreateTab("Player", 4483362458)
+local VisualsTab = Window:CreateTab("Visuals", 4483362458)
+local MiscTab = Window:CreateTab("Misc", 4483362458)
+local SettingsTab = Window:CreateTab("Settings", 4483362458) -- New tab for settings
+local CreditsTab = Window:CreateTab("Credits", 4483362458)
 
 -- Blatant Tab
-local AutoParrySection = BlatantTab.Section("Auto Parry")
-AutoParrySection.Label("Welcome, "..LocalPlayer.DisplayName.." to Kryp Paid!", Color3.fromRGB(217, 97, 99))
-AutoParrySection.Toggle("Enabled", function(value)
-    if value then
-        Connections_Manager['Auto Parry'] = RunService.PreSimulation:Connect(function()
+local AutoParrySection = BlatantTab:CreateSection("Auto Parry")
+AutoParrySection:CreateLabel("Welcome, " .. LocalPlayer.DisplayName .. " to Kryp Paid!")
+
+AutoParrySection:CreateToggle({
+   Name = "Enabled",
+   CurrentValue = false,
+   Callback = function(value)
+      if value then
+         Connections_Manager['Auto Parry'] = RunService.PreSimulation:Connect(function()
             local One_Ball = Auto_Parry.Get_Ball()
             local Balls = Auto_Parry.Get_Balls()
             for _, Ball in pairs(Balls) do
-                if not Ball then return end
-                local Zoomies = Ball:FindFirstChild('zoomies')
-                if not Zoomies then return end
-                Ball:GetAttributeChangedSignal('target'):Once(function()
-                    Parried = false
-                end)
-                if Parried then return end
-                local Ball_Target = Ball:GetAttribute('target')
-                local One_Target = One_Ball:GetAttribute('target')
-                local Velocity = Zoomies.VectorVelocity
-                local Distance = (LocalPlayer.Character.PrimaryPart.Position - Ball.Position).Magnitude
-                local Ping = Stats.Network.ServerStatsItem['Data Ping']:GetValue() / 10
-                local Ping_Threshold = math.clamp(Ping / 10, 5, 17)
-                local Speed = Velocity.Magnitude
-                local cappedSpeedDiff = math.min(math.max(Speed - 9.5, 0), 650)
-                local speed_divisor_base = 2.4 + cappedSpeedDiff * 0.002
-                local effectiveMultiplier = Speed_Divisor_Multiplier
-                if Flags.RandomParryAccuracy then
-                    if Speed < 200 then
-                        effectiveMultiplier = 0.7 + (math.random(40, 100) - 1) * (0.35 / 99)
-                    else
-                        effectiveMultiplier = 0.7 + (math.random(1, 100) - 1) * (0.35 / 99)
-                    end
-                end
-                local speed_divisor = speed_divisor_base * effectiveMultiplier
-                local Parry_Accuracy = Ping_Threshold + math.max(Speed / speed_divisor, 9.5)
-                local Curved = Auto_Parry.Is_Curved()
-                if Phantom and LocalPlayer.Character:FindFirstChild('ParryHighlight') and Flags.PhantomDetection then
-                    ContextActionService:BindAction('BlockPlayerMovement', BlockMovement, false, Enum.KeyCode.W, Enum.KeyCode.A, Enum.KeyCode.S, Enum.KeyCode.D, Enum.UserInputType.Touch)
-                    LocalPlayer.Character.Humanoid.WalkSpeed = 36
-                    LocalPlayer.Character.Humanoid:MoveTo(Ball.Position)
-                    task.spawn(function()
-                        repeat
-                            if LocalPlayer.Character.Humanoid.WalkSpeed ~= 36 then
-                                LocalPlayer.Character.Humanoid.WalkSpeed = 36
-                            end
-                            task.wait()
-                        until not Phantom
-                    end)
-                    Ball:GetAttributeChangedSignal('target'):Once(function()
-                        ContextActionService:UnbindAction('BlockPlayerMovement')
-                        Phantom = false
-                        LocalPlayer.Character.Humanoid:MoveTo(LocalPlayer.Character.HumanoidRootPart.Position)
-                        LocalPlayer.Character.Humanoid.WalkSpeed = 10
-                        task.delay(3, function()
-                            LocalPlayer.Character.Humanoid.WalkSpeed = 36
-                        end)
-                    end)
-                end
-                if Ball_Target == tostring(LocalPlayer) and Distance <= Parry_Accuracy and Phantom then
-                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, game)
-                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.F, false, game)
-                    Parried = true
-                end
-                if Ball:FindFirstChild('AeroDynamicSlashVFX') then
-                    Debris:AddItem(Ball.AeroDynamicSlashVFX, 0)
-                    Tornado_Time = tick()
-                end
-                if Runtime:FindFirstChild('Tornado') then
-                    if (tick() - Tornado_Time) < (Runtime.Tornado:GetAttribute("TornadoTime") or 1) + 0.314159 then
-                        return
-                    end
-                end
-                if One_Target == tostring(LocalPlayer) and Curved then
-                    return
-                end
-                if Ball:FindFirstChild("ComboCounter") then
-                    return
-                end
-                local Singularity_Cape = LocalPlayer.Character.PrimaryPart:FindFirstChild('SingularityCape')
-                if Singularity_Cape then
-                    return
-                end
-                if Flags.InfinityDetection and Infinity then
-                    return
-                end
-                if Ball_Target == tostring(LocalPlayer) and Distance <= Parry_Accuracy then
-                    if Flags.AutoAbility and AutoAbility() then
-                        return
-                    end
-                end
-                if Ball_Target == tostring(LocalPlayer) and Distance <= Parry_Accuracy then
-                    if Flags.CooldownProtection and cooldownProtection() then
-                        return
-                    end
-                    local Parry_Time = os.clock()
-                    local Time_View = Parry_Time - Last_Parry
-                    if Time_View > 0.5 then
-                        Auto_Parry.Parry_Animation()
-                    end
-                    if Flags.AutoParryKeypress then
-                        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, nil)
-                    else
-                        Auto_Parry.Parry(Selected_Parry_Type)
-                    end
-                    Last_Parry = Parry_Time
-                    Parried = true
-                end
-                local Last_Parrys = tick()
-                repeat
-                    RunService.PreSimulation:Wait()
-                until (tick() - Last_Parrys) >= 1 or not Parried
-                Parried = false
+               if not Ball then return end
+               local Zoomies = Ball:FindFirstChild('zoomies')
+               if not Zoomies then return end
+               Ball:GetAttributeChangedSignal('target'):Once(function()
+                  Parried = false
+               end)
+               if Parried then return end
+               local Ball_Target = Ball:GetAttribute('target')
+               local One_Target = One_Ball:GetAttribute('target')
+               local Velocity = Zoomies.VectorVelocity
+               local Distance = (LocalPlayer.Character.PrimaryPart.Position - Ball.Position).Magnitude
+               local Ping = Stats.Network.ServerStatsItem['Data Ping']:GetValue() / 10
+               local Ping_Threshold = math.clamp(Ping / 10, 5, 17)
+               local Speed = Velocity.Magnitude
+               local cappedSpeedDiff = math.min(math.max(Speed - 9.5, 0), 650)
+               local speed_divisor_base = 2.4 + cappedSpeedDiff * 0.002
+               local effectiveMultiplier = Speed_Divisor_Multiplier
+               if Rayfield:GetFlag("RandomParryAccuracy") then
+                  if Speed < 200 then
+                     effectiveMultiplier = 0.7 + (math.random(40, 100) - 1) * (0.35 / 99)
+                  else
+                     effectiveMultiplier = 0.7 + (math.random(1, 100) - 1) * (0.35 / 99)
+                  end
+               end
+               local speed_divisor = speed_divisor_base * effectiveMultiplier
+               local Parry_Accuracy = Ping_Threshold + math.max(Speed / speed_divisor, 9.5)
+               local Curved = Auto_Parry.Is_Curved()
+               if Phantom and LocalPlayer.Character:FindFirstChild('ParryHighlight') and Rayfield:GetFlag("PhantomDetection") then
+                  ContextActionService:BindAction('BlockPlayerMovement', BlockMovement, false, Enum.KeyCode.W, Enum.KeyCode.A, Enum.KeyCode.S, Enum.KeyCode.D, Enum.UserInputType.Touch)
+                  LocalPlayer.Character.Humanoid.WalkSpeed = 36
+                  LocalPlayer.Character.Humanoid:MoveTo(Ball.Position)
+                  task.spawn(function()
+                     repeat
+                        if LocalPlayer.Character.Humanoid.WalkSpeed ~= 36 then
+                           LocalPlayer.Character.Humanoid.WalkSpeed = 36
+                        end
+                        task.wait()
+                     until not Phantom
+                  end)
+                  Ball:GetAttributeChangedSignal('target'):Once(function()
+                     ContextActionService:UnbindAction('BlockPlayerMovement')
+                     Phantom = false
+                     LocalPlayer.Character.Humanoid:MoveTo(LocalPlayer.Character.HumanoidRootPart.Position)
+                     LocalPlayer.Character.Humanoid.WalkSpeed = 10
+                     task.delay(3, function()
+                        LocalPlayer.Character.Humanoid.WalkSpeed = 36
+                     end)
+                  end)
+               end
+               if Ball_Target == tostring(LocalPlayer) and Distance <= Parry_Accuracy and Phantom then
+                  VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, game)
+                  VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.F, false, game)
+                  Parried = true
+               end
+               if Ball:FindFirstChild('AeroDynamicSlashVFX') then
+                  Debris:AddItem(Ball.AeroDynamicSlashVFX, 0)
+                  Tornado_Time = tick()
+               end
+               if Runtime:FindFirstChild('Tornado') then
+                  if (tick() - Tornado_Time) < (Runtime.Tornado:GetAttribute("TornadoTime") or 1) + 0.314159 then
+                     return
+                  end
+               end
+               if One_Target == tostring(LocalPlayer) and Curved then
+                  return
+               end
+               if Ball:FindFirstChild("ComboCounter") then
+                  return
+               end
+               local Singularity_Cape = LocalPlayer.Character.PrimaryPart:FindFirstChild('SingularityCape')
+               if Singularity_Cape then
+                  return
+               end
+               if Rayfield:GetFlag("InfinityDetection") and Infinity then
+                  return
+               end
+               if Ball_Target == tostring(LocalPlayer) and Distance <= Parry_Accuracy then
+                  if Rayfield:GetFlag("AutoAbility") and AutoAbility() then
+                     return
+                  end
+               end
+               if Ball_Target == tostring(LocalPlayer) and Distance <= Parry_Accuracy then
+                  if Rayfield:GetFlag("CooldownProtection") and cooldownProtection() then
+                     return
+                  end
+                  local Parry_Time = os.clock()
+                  local Time_View = Parry_Time - Last_Parry
+                  if Time_View > 0.5 then
+                     Auto_Parry.Parry_Animation()
+                  end
+                  if Rayfield:GetFlag("AutoParryKeypress") then
+                     VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, nil)
+                  else
+                     Auto_Parry.Parry(Selected_Parry_Type)
+                  end
+                  Last_Parry = Parry_Time
+                  Parried = true
+               end
+               local Last_Parrys = tick()
+               repeat
+                  RunService.PreSimulation:Wait()
+               until (tick() - Last_Parrys) >= 1 or not Parried
+               Parried = false
             end
-        end)
-    else
-        if Connections_Manager['Auto Parry'] then
+         end)
+      else
+         if Connections_Manager['Auto Parry'] then
             Connections_Manager['Auto Parry']:Disconnect()
             Connections_Manager['Auto Parry'] = nil
-        end
-    end
-end)
+         end
+      end
+   end
+})
 
-AutoParrySection.Slider("Parry Accuracy", 100, 1, 100, function(value)
-    Speed_Divisor_Multiplier = 0.7 + (value - 1) * (0.35 / 99)
-end)
+AutoParrySection:CreateSlider({
+   Name = "Parry Accuracy",
+   Range = {1, 100},
+   Increment = 1,
+   CurrentValue = 100,
+   Callback = function(value)
+      Speed_Divisor_Multiplier = 0.7 + (value - 1) * (0.35 / 99)
+   end
+})
 
 local parryTypeMap = {
-    ["Camera"] = "Camera",
-    ["Random"] = "Random",
-    ["Backwards"] = "Backwards",
-    ["Straight"] = "Straight",
-    ["High"] = "High",
-    ["Left"] = "Left",
-    ["Right"] = "Right",
-    ["Random Target"] = "RandomTarget"
+   ["Camera"] = "Camera",
+   ["Random"] = "Random",
+   ["Backwards"] = "Backwards",
+   ["Straight"] = "Straight",
+   ["High"] = "High",
+   ["Left"] = "Left",
+   ["Right"] = "Right",
+   ["Random Target"] = "RandomTarget"
 }
 
-AutoParrySection.Dropdown("Curve Type", {"Camera", "Random", "Backwards", "Straight", "High", "Left", "Right", "Random Target"}, function(value)
-    Selected_Parry_Type = parryTypeMap[value] or value
-end, "CurveType")
+AutoParrySection:CreateDropdown({
+   Name = "Curve Type",
+   Options = {"Camera", "Random", "Backwards", "Straight", "High", "Left", "Right", "Random Target"},
+   CurrentOption = "Camera",
+   Callback = function(value)
+      Selected_Parry_Type = parryTypeMap[value] or value
+   end
+})
 
-AutoParrySection.Toggle("Random Parry Accuracy", function(value) end, "RandomParryAccuracy")
-AutoParrySection.Toggle("Infinity Detection", function(value) end, "InfinityDetection")
-AutoParrySection.Toggle("Keypress", function(value) end, "AutoParryKeypress")
-AutoParrySection.Toggle("Phantom Detection", function(value) end, "PhantomDetection")
-AutoParrySection.Toggle("Auto Ability", function(value) end, "AutoAbility")
-AutoParrySection.Toggle("Cooldown Protection", function(value) end, "CooldownProtection")
+AutoParrySection:CreateToggle({
+   Name = "Random Parry Accuracy",
+   CurrentValue = false,
+   Flag = "RandomParryAccuracy",
+   Callback = function(value) end
+})
 
-local AutoSpamParrySection = BlatantTab.Section("Auto Spam Parry")
+AutoParrySection:CreateToggle({
+   Name = "Infinity Detection",
+   CurrentValue = false,
+   Flag = "InfinityDetection",
+   Callback = function(value) end
+})
+
+AutoParrySection:CreateToggle({
+   Name = "Keypress",
+   CurrentValue = false,
+   Flag = "AutoParryKeypress",
+   Callback = function(value) end
+})
+
+AutoParrySection:CreateToggle({
+   Name = "Phantom Detection",
+   CurrentValue = false,
+   Flag = "PhantomDetection",
+   Callback = function(value) end
+})
+
+AutoParrySection:CreateToggle({
+   Name = "Auto Ability",
+   CurrentValue = false,
+   Flag = "AutoAbility",
+   Callback = function(value) end
+})
+
+AutoParrySection:CreateToggle({
+   Name = "Cooldown Protection",
+   CurrentValue = false,
+   Flag = "CooldownProtection",
+   Callback = function(value) end
+})
+
+local AutoSpamParrySection = BlatantTab:CreateSection("Auto Spam Parry")
+
 local function toggleAutoSpam(activate)
-    AutoSpamActive = activate
-    if activate then
-        if not Connections_Manager['Auto Spam'] then
-            Connections_Manager['Auto Spam'] = RunService.Heartbeat:Connect(function()
-                if Flags.SpamParryKeypress then
-                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, game)
-                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.F, false, game)
-                else
-                    Auto_Parry.Parry(Selected_Parry_Type)
-                end
-            end)
-        end
-    else
-        if Connections_Manager['Auto Spam'] then
-            Connections_Manager['Auto Spam']:Disconnect()
-            Connections_Manager['Auto Spam'] = nil
-        end
-    end
+   AutoSpamActive = activate
+   if activate then
+      if not Connections_Manager['Auto Spam'] then
+         Connections_Manager['Auto Spam'] = RunService.Heartbeat:Connect(function()
+            if Rayfield:GetFlag("SpamParryKeypress") then
+               VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, game)
+               VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.F, false, game)
+            else
+               Auto_Parry.Parry(Selected_Parry_Type)
+            end
+         end)
+      end
+   else
+      if Connections_Manager['Auto Spam'] then
+         Connections_Manager['Auto Spam']:Disconnect()
+         Connections_Manager['Auto Spam'] = nil
+      end
+   end
 end
 
 local function checkAutoSpam()
-    local Ball = Auto_Parry.Get_Ball()
-    if not Ball then
-        if AutoSpamActive then
-            toggleAutoSpam(false)
-        end
-        return
-    end
-    local Zoomies = Ball:FindFirstChild('zoomies')
-    if not Zoomies then
-        if AutoSpamActive then
-            toggleAutoSpam(false)
-        end
-        return
-    end
-    Auto_Parry.Closest_Player()
-    local Ping = Stats.Network.ServerStatsItem['Data Ping']:GetValue()
-    local Ping_Threshold = math.clamp(Ping / 10, 1, 16)
-    local Ball_Target = Ball:GetAttribute('target')
-    local Ball_Properties = Auto_Parry:Get_Ball_Properties()
-    local Entity_Properties = Auto_Parry:Get_Entity_Properties()
-    local Spam_Accuracy = Auto_Parry.Spam_Service({
-        Ball_Properties = Ball_Properties,
-        Entity_Properties = Entity_Properties,
-        Ping = Ping_Threshold
-    })
-    local Target_Position = Closest_Entity and Closest_Entity.PrimaryPart.Position
-    local Target_Distance = Target_Position and LocalPlayer:DistanceFromCharacter(Target_Position) or math.huge
-    local Direction = (LocalPlayer.Character.PrimaryPart.Position - Ball.Position).Unit
-    local Ball_Direction = Zoomies.VectorVelocity.Unit
-    local Dot = Direction:Dot(Ball_Direction)
-    local Distance = LocalPlayer:DistanceFromCharacter(Ball.Position)
-    local Pulsed = LocalPlayer.Character:GetAttribute('Pulsed')
-    local FastSpamAccuracy = Spam_Accuracy * 0.8
-    if Ball_Target and not Pulsed and Target_Distance <= FastSpamAccuracy and Distance <= FastSpamAccuracy and Parries <= ParryThreshold then
-        if not AutoSpamActive then
-            toggleAutoSpam(true)
-        end
-    else
-        if AutoSpamActive then
-            toggleAutoSpam(false)
-        end
-    end
+   local Ball = Auto_Parry.Get_Ball()
+   if not Ball then
+      if AutoSpamActive then
+         toggleAutoSpam(false)
+      end
+      return
+   end
+   local Zoomies = Ball:FindFirstChild('zoomies')
+   if not Zoomies then
+      if AutoSpamActive then
+         toggleAutoSpam(false)
+      end
+      return
+   end
+   Auto_Parry.Closest_Player()
+   local Ping = Stats.Network.ServerStatsItem['Data Ping']:GetValue()
+   local Ping_Threshold = math.clamp(Ping / 10, 1, 16)
+   local Ball_Target = Ball:GetAttribute('target')
+   local Ball_Properties = Auto_Parry:Get_Ball_Properties()
+   local Entity_Properties = Auto_Parry:Get_Entity_Properties()
+   local Spam_Accuracy = Auto_Parry.Spam_Service({
+      Ball_Properties = Ball_Properties,
+      Entity_Properties = Entity_Properties,
+      Ping = Ping_Threshold
+   })
+   local Target_Position = Closest_Entity and Closest_Entity.PrimaryPart.Position
+   local Target_Distance = Target_Position and LocalPlayer:DistanceFromCharacter(Target_Position) or math.huge
+   local Direction = (LocalPlayer.Character.PrimaryPart.Position - Ball.Position).Unit
+   local Ball_Direction = Zoomies.VectorVelocity.Unit
+   local Dot = Direction:Dot(Ball_Direction)
+   local Distance = LocalPlayer:DistanceFromCharacter(Ball.Position)
+   local Pulsed = LocalPlayer.Character:GetAttribute('Pulsed')
+   local FastSpamAccuracy = Spam_Accuracy * 0.8
+   if Ball_Target and not Pulsed and Target_Distance <= FastSpamAccuracy and Distance <= FastSpamAccuracy and Parries <= ParryThreshold then
+      if not AutoSpamActive then
+         toggleAutoSpam(true)
+      end
+   else
+      if AutoSpamActive then
+         toggleAutoSpam(false)
+      end
+   end
 end
 
-AutoSpamParrySection.Toggle("Enabled", function(value)
-    if value then
-        Connections_Manager['Auto Spam Check'] = RunService.Heartbeat:Connect(checkAutoSpam)
-    else
-        if Connections_Manager['Auto Spam Check'] then
+AutoSpamParrySection:CreateToggle({
+   Name = "Enabled",
+   CurrentValue = false,
+   Callback = function(value)
+      if value then
+         Connections_Manager['Auto Spam Check'] = RunService.Heartbeat:Connect(checkAutoSpam)
+      else
+         if Connections_Manager['Auto Spam Check'] then
             Connections_Manager['Auto Spam Check']:Disconnect()
             Connections_Manager['Auto Spam Check'] = nil
-        end
-        if AutoSpamActive then
+         end
+         if AutoSpamActive then
             toggleAutoSpam(false)
-        end
-    end
-end)
+         end
+      end
+   end
+})
 
-AutoSpamParrySection.RadioButton("Parry Type", {"Legit", "Blatant"}, function(value) end)
-AutoSpamParrySection.Slider("Parry Threshold", 2.5, 0, 5, function(value)
-    ParryThreshold = value
-end)
-AutoSpamParrySection.Toggle("Spam Parry Keypress", function(value) end, "SpamParryKeypress")
+AutoSpamParrySection:CreateDropdown({
+   Name = "Parry Type",
+   Options = {"Legit", "Blatant"},
+   CurrentOption = "Legit",
+   Callback = function(value) end
+})
 
-local LobbyAPSection = BlatantTab.Section("Lobby Auto Parry")
-LobbyAPSection.Label("Lobby Auto Parry Settings")
-LobbyAPSection.Slider("Parry Accuracy", 100, 1, 100, function(value)
-    LobbyAP_Speed_Divisor_Multiplier = 0.7 + (value - 1) * (0.35 / 99)
-end)
-LobbyAPSection.Toggle("Random Parry Accuracy", function(value) end, "LobbyAPRandomParryAccuracy")
-LobbyAPSection.Toggle("Keypress", function(value) end, "LobbyAPKeypress")
-LobbyAPSection.Dropdown("First Press Type", {"F Key", "Left Click", "Navigation"}, function(value)
-    firstParryType = value:gsub(" ", "_")
-end)
+AutoSpamParrySection:CreateSlider({
+   Name = "Parry Threshold",
+   Range = {0, 5},
+   Increment = 0.1,
+   CurrentValue = 2.5,
+   Callback = function(value)
+      ParryThreshold = value
+   end
+})
+
+AutoSpamParrySection:CreateToggle({
+   Name = "Spam Parry Keypress",
+   CurrentValue = false,
+   Flag = "SpamParryKeypress",
+   Callback = function(value) end
+})
+
+if not isMobile then
+   AutoSpamParrySection:CreateToggle({
+      Name = "Animation Fix",
+      CurrentValue = false,
+      Callback = function(value)
+         if value then
+            Connections_Manager['Animation Fix'] = RunService.PreSimulation:Connect(function()
+               local Ball = Auto_Parry.Get_Ball()
+               if not Ball then return end
+               local Zoomies = Ball:FindFirstChild('zoomies')
+               if not Zoomies then return end
+               Auto_Parry.Closest_Player()
+               local Ping = Stats.Network.ServerStatsItem['Data Ping']:GetValue()
+               local Ping_Threshold = math.clamp(Ping / 10, 10, 16)
+               local Ball_Target = Ball:GetAttribute('target')
+               local Ball_Properties = Auto_Parry:Get_Ball_Properties()
+               local Entity_Properties = Auto_Parry:Get_Entity_Properties()
+               local Spam_Accuracy = Auto_Parry.Spam_Service({
+                  Ball_Properties = Ball_Properties,
+                  Entity_Properties = Entity_Properties,
+                  Ping = Ping_Threshold
+               })
+               local Target_Position = Closest_Entity and Closest_Entity.PrimaryPart.Position
+               local Target_Distance = Target_Position and LocalPlayer:DistanceFromCharacter(Target_Position) or math.huge
+               local Direction = (LocalPlayer.Character.PrimaryPart.Position - Ball.Position).Unit
+               local Ball_Direction = Zoomies.VectorVelocity.Unit
+               local Dot = Direction:Dot(Ball_Direction)
+               local Distance = LocalPlayer:DistanceFromCharacter(Ball.Position)
+               if not Ball_Target then return end
+               if Target_Distance > Spam_Accuracy or Distance > Spam_Accuracy then return end
+               local Pulsed = LocalPlayer.Character:GetAttribute('Pulsed')
+               if Pulsed then return end
+               if Ball_Target == tostring(LocalPlayer) and Target_Distance > 30 and Distance > 30 then
+                  return
+               end
+               local threshold = ParryThreshold
+               if Distance <= Spam_Accuracy and Parries > threshold then
+                  VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, game)
+               end
+            end)
+         else
+            if Connections_Manager['Animation Fix'] then
+               Connections_Manager['Animation Fix']:Disconnect()
+               Connections_Manager['Animation Fix'] = nil
+            end
+         end
+      end
+   })
+end
+
+local ManualSpamSection = BlatantTab:CreateSection("Manual Spam")
+
+local function toggleManualSpam(activate)
+   ManualSpamActive = activate
+   local button = CoreGui:FindFirstChild("ManualSpamUI") and CoreGui.ManualSpamUI.MainFrame.ClashModeButton
+   if button then
+      if AutoManualSpamEnabled and not ManualSpamActive then
+         button.Text = "Auto"
+         button.TextColor3 = Color3.new(0, 0, 1)
+      else
+         button.Text = activate and "Stop" or "Clash Mode"
+         button.TextColor3 = activate and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
+      end
+   end
+   if activate then
+      if not Connections_Manager['Manual Spam'] then
+         Connections_Manager['Manual Spam'] = RunService.Heartbeat:Connect(function()
+            Auto_Parry.Parry(Selected_Parry_Type)
+         end)
+      end
+   else
+      if Connections_Manager['Manual Spam'] then
+         Connections_Manager['Manual Spam']:Disconnect()
+         Connections_Manager['Manual Spam'] = nil
+      end
+   end
+end
+
+local function checkAutoManualSpam()
+   if not AutoManualSpamEnabled then return end
+   local Ball = Auto_Parry.Get_Ball()
+   if not Ball then
+      if ManualSpamActive then
+         toggleManualSpam(false)
+      end
+      return
+   end
+   local Zoomies = Ball:FindFirstChild('zoomies')
+   if not Zoomies then
+      if ManualSpamActive then
+         toggleManualSpam(false)
+      end
+      return
+   end
+   Auto_Parry.Closest_Player()
+   local Ping = Stats.Network.ServerStatsItem['Data Ping']:GetValue()
+   local Ping_Threshold = math.clamp(Ping / 10, 1, 16)
+   local Ball_Target = Ball:GetAttribute('target')
+   local Ball_Properties = Auto_Parry:Get_Ball_Properties()
+   local Entity_Properties = Auto_Parry:Get_Entity_Properties()
+   local Spam_Accuracy = Auto_Parry.Spam_Service({
+      Ball_Properties = Ball_Properties,
+      Entity_Properties = Entity_Properties,
+      Ping = Ping_Threshold
+   })
+   local Target_Position = Closest_Entity and Closest_Entity.PrimaryPart.Position
+   local Target_Distance = Target_Position and LocalPlayer:DistanceFromCharacter(Target_Position) or math.huge
+   local Direction = (LocalPlayer.Character.PrimaryPart.Position - Ball.Position).Unit
+   local Ball_Direction = Zoomies.VectorVelocity.Unit
+   local Dot = Direction:Dot(Ball_Direction)
+   local Distance = LocalPlayer:DistanceFromCharacter(Ball.Position)
+   local Pulsed = LocalPlayer.Character:GetAttribute('Pulsed')
+   local FastSpamAccuracy = Spam_Accuracy * 0.8
+   if Ball_Target and not Pulsed and Target_Distance <= FastSpamAccuracy and Distance <= FastSpamAccuracy and Parries <= ParryThreshold then
+      if not ManualSpamActive then
+         toggleManualSpam(true)
+      end
+   else
+      if ManualSpamActive then
+         toggleManualSpam(false)
+      end
+   end
+end
+
+ManualSpamSection:CreateButton({
+   Name = "Toggle Automatically",
+   Callback = function()
+      AutoManualSpamEnabled = not AutoManualSpamEnabled
+      if AutoManualSpamEnabled then
+         Connections_Manager['Auto Manual Spam'] = RunService.Heartbeat:Connect(checkAutoManualSpam)
+         local button = CoreGui:FindFirstChild("ManualSpamUI") and CoreGui.ManualSpamUI.MainFrame.ClashModeButton
+         if button and not ManualSpamActive then
+            button.Text = "Auto"
+            button.TextColor3 = Color3.new(0, 0, 1)
+         end
+      else
+         if Connections_Manager['Auto Manual Spam'] then
+            Connections_Manager['Auto Manual Spam']:Disconnect()
+            Connections_Manager['Auto Manual Spam'] = nil
+         end
+         if ManualSpamActive then
+            toggleManualSpam(false)
+         end
+         local button = CoreGui:FindFirstChild("ManualSpamUI") and CoreGui.ManualSpamUI.MainFrame.ClashModeButton
+         if button then
+            button.Text = "Clash Mode"
+            button.TextColor3 = Color3.new(1, 0, 0)
+         end
+      end
+   end
+})
+
+ManualSpamSection:CreateToggle({
+   Name = "Manual Spam UI",
+   CurrentValue = false,
+   Flag = "ManualSpamUI",
+   Callback = function(value)
+      if value then
+         if not CoreGui:FindFirstChild("ManualSpamUI") then
+            local gui = Instance.new("ScreenGui")
+            gui.Name = "ManualSpamUI"
+            gui.ResetOnSpawn = false
+            gui.Parent = CoreGui
+
+            local frame = Instance.new("Frame")
+            frame.Name = "MainFrame"
+            frame.Position = UDim2.new(0, 20, 0, 20)
+            frame.Size = UDim2.new(0, 160, 0, 60)
+            frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+            frame.BackgroundTransparency = 0.3
+            frame.BorderSizePixel = 0
+            frame.Active = true
+            frame.Draggable = true
+            frame.Parent = gui
+
+            local uiCorner = Instance.new("UICorner")
+            uiCorner.CornerRadius = UDim.new(0, 12)
+            uiCorner.Parent = frame
+
+            local uiStroke = Instance.new("UIStroke")
+            uiStroke.Thickness = 2
+            uiStroke.Color = Color3.new(0, 0, 0)
+            uiStroke.Parent = frame
+
+            local button = Instance.new("TextButton")
+            button.Name = "ClashModeButton"
+            button.Text = AutoManualSpamEnabled and "Auto" or "Clash Mode"
+            button.TextColor3 = AutoManualSpamEnabled and Color3.new(0, 0, 1) or Color3.new(1, 0, 0)
+            button.Size = UDim2.new(0, 120, 0, 40)
+            button.Position = UDim2.new(0.5, -60, 0.5, -20)
+            button.BackgroundTransparency = 1
+            button.BorderSizePixel = 0
+            button.Font = Enum.Font.GothamSemibold
+            button.TextSize = 18
+            button.Parent = frame
+
+            Connections_Manager['Manual Spam Keybind'] = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+               if gameProcessed then return end
+               if input.KeyCode == Enum.KeyCode.E then
+                  if not AutoManualSpamEnabled then
+                     toggleManualSpam(not ManualSpamActive)
+                  end
+               end
+            end)
+         end
+      else
+         if CoreGui:FindFirstChild("ManualSpamUI") then
+            CoreGui:FindFirstChild("ManualSpamUI"):Destroy()
+         end
+         if Connections_Manager['Manual Spam'] then
+            Connections_Manager['Manual Spam']:Disconnect()
+            Connections_Manager['Manual Spam'] = nil
+         end
+         if Connections_Manager['Auto Manual Spam'] then
+            Connections_Manager['Auto Manual Spam']:Disconnect()
+            Connections_Manager['Auto Manual Spam'] = nil
+         end
+         if Connections_Manager['Manual Spam Keybind'] then
+            Connections_Manager['Manual Spam Keybind']:Disconnect()
+            Connections_Manager['Manual Spam Keybind'] = nil
+         end
+         ManualSpamActive = false
+         AutoManualSpamEnabled = false
+      end
+   end
+})
+
+local BallPauseSection = BlatantTab:CreateSection("Ball Pause")
+
+BallPauseSection:CreateToggle({
+   Name = "Enabled",
+   CurrentValue = false,
+   Callback = function(value)
+      BallPauseEnabled = value
+      if value then
+         Connections_Manager['Ball Pause'] = RunService.Heartbeat:Connect(pauseBall)
+      else
+         if Connections_Manager['Ball Pause'] then
+            Connections_Manager['Ball Pause']:Disconnect()
+            Connections_Manager['Ball Pause'] = nil
+         end
+      end
+   end
+})
+
+BallPauseSection:CreateSlider({
+   Name = "Distance Threshold",
+   Range = {5, 20},
+   Increment = 1,
+   CurrentValue = 10,
+   Callback = function(value)
+      BallPauseDistanceThreshold = value
+   end
+})
+
+local LobbyAPSection = BlatantTab:CreateSection("Lobby Auto Parry")
+
+LobbyAPSection:CreateToggle({
+   Name = "Enabled",
+   CurrentValue = false,
+   Callback = function(value)
+      if value then
+         Connections_Manager['Lobby AP'] = RunService.Heartbeat:Connect(function()
+            local Ball = Auto_Parry.Lobby_Balls()
+            if not Ball then return end
+            local Zoomies = Ball:FindFirstChild('zoomies')
+            if not Zoomies then return end
+            Ball:GetAttributeChangedSignal('target'):Once(function()
+               Training_Parried = false
+            end)
+            if Training_Parried then return end
+            local Ball_Target = Ball:GetAttribute('target')
+            local Velocity = Zoomies.VectorVelocity
+            local Distance = LocalPlayer:DistanceFromCharacter(Ball.Position)
+            local Speed = Velocity.Magnitude
+            local Ping = Stats.Network.ServerStatsItem['Data Ping']:GetValue() / 10
+            local LobbyAPcappedSpeedDiff = math.min(math.max(Speed - 9.5, 0), 650)
+            local LobbyAPspeed_divisor_base = 2.4 + LobbyAPcappedSpeedDiff * 0.002
+            local LobbyAPeffectiveMultiplier = LobbyAP_Speed_Divisor_Multiplier
+            if Rayfield:GetFlag("LobbyAPRandomParryAccuracy") then
+               LobbyAPeffectiveMultiplier = 0.7 + (math.random(1, 100) - 1) * (0.35 / 99)
+            end
+            local LobbyAPspeed_divisor = LobbyAPspeed_divisor_base * LobbyAPeffectiveMultiplier
+            local LobbyAPParry_Accuracys = Ping + math.max(Speed / LobbyAPspeed_divisor, 9.5)
+            if Ball_Target == tostring(LocalPlayer) and Distance <= LobbyAPParry_Accuracys then
+               if Rayfield:GetFlag("LobbyAPKeypress") then
+                  VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, game)
+               else
+                  Auto_Parry.Parry(Selected_Parry_Type)
+               end
+               Training_Parried = true
+            end
+            local Last_Parrys = tick()
+            repeat
+               RunService.PreSimulation:Wait()
+            until (tick() - Last_Parrys) >= 1 or not Training_Parried
+            Training_Parried = false
+         end)
+      else
+         if Connections_Manager['Lobby AP'] then
+            Connections_Manager['Lobby AP']:Disconnect()
+            Connections_Manager['Lobby AP'] = nil
+         end
+      end
+   end
+})
+
+LobbyAPSection:CreateSlider({
+   Name = "Parry Accuracy",
+   Range = {1, 100},
+   Increment = 1,
+   CurrentValue = 100,
+   Callback = function(value)
+      LobbyAP_Speed_Divisor_Multiplier = 0.7 + (value - 1) * (0.35 / 99)
+   end
+})
+
+LobbyAPSection:CreateToggle({
+   Name = "Random Parry Accuracy",
+   CurrentValue = false,
+   Flag = "LobbyAPRandomParryAccuracy",
+   Callback = function(value) end
+})
+
+LobbyAPSection:CreateToggle({
+   Name = "Keypress",
+   CurrentValue = false,
+   Flag = "LobbyAPKeypress",
+   Callback = function(value) end
+})
+
+-- Combat Tab (New)
+local CombatEnhancementsSection = CombatTab:CreateSection("Combat Enhancements")
+
+-- New Feature: Auto Dodge
+local AutoDodgeEnabled = false
+CombatEnhancementsSection:CreateToggle({
+   Name = "Auto Dodge",
+   CurrentValue = false,
+   Callback = function(value)
+      AutoDodgeEnabled = value
+      if value then
+         Connections_Manager['Auto Dodge'] = RunService.Heartbeat:Connect(function()
+            local Ball = Auto_Parry.Get_Ball()
+            if not Ball then return end
+            local Zoomies = Ball:FindFirstChild('zoomies')
+            if not Zoomies then return end
+            local Ball_Target = Ball:GetAttribute('target')
+            if Ball_Target ~= tostring(LocalPlayer) then return end
+            local Distance = (LocalPlayer.Character.PrimaryPart.Position - Ball.Position).Magnitude
+            if Distance < 15 then
+               local Direction = (LocalPlayer.Character.PrimaryPart.Position - Ball.Position).Unit
+               LocalPlayer.Character.Humanoid:MoveTo(LocalPlayer.Character.PrimaryPart.Position + Direction * 20)
+            end
+         end)
+      else
+         if Connections_Manager['Auto Dodge'] then
+            Connections_Manager['Auto Dodge']:Disconnect()
+            Connections_Manager['Auto Dodge'] = nil
+         end
+      end
+   end
+})
+
+-- New Feature: Auto Counter
+local AutoCounterEnabled = false
+CombatEnhancementsSection:CreateToggle({
+   Name = "Auto Counter",
+   CurrentValue = false,
+   Callback = function(value)
+      AutoCounterEnabled = value
+      if value then
+         Connections_Manager['Auto Counter'] = Workspace.Balls.ChildAdded:Connect(function(ball)
+            if ball:GetAttribute("realBall") and ball:GetAttribute("target") == tostring(LocalPlayer) then
+               task.delay(0.1, function()
+                  if Auto_Parry.Parry(Selected_Parry_Type) then
+                     VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Q, false, game)
+                     VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Q, false, game)
+                  end
+               end)
+            end
+         end)
+      else
+         if Connections_Manager['Auto Counter'] then
+            Connections_Manager['Auto Counter']:Disconnect()
+            Connections_Manager['Auto Counter'] = nil
+         end
+      end
+   end
+})
 
 -- Player Tab
-local MovementSection = PlayerTab.Section("Movement")
-MovementSection.Label("Movement Enhancements")
-MovementSection.Slider("Strafe Speed", 36, 16, 100, function(value)
-    StrafeSpeed = value
-    if LocalPlayer.Character and LocalPlayer.Character.Humanoid then
-        LocalPlayer.Character.Humanoid.WalkSpeed = value
-    end
-end)
-MovementSection.Toggle("Spinbot", function(value)
-    if value then
-        Connections_Manager['Spinbot'] = RunService.RenderStepped:Connect(function()
-            if LocalPlayer.Character and LocalPlayer.Character.HumanoidRootPart then
-                LocalPlayer.Character.HumanoidRootPart.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.Angles(0, math.rad(360 / 60), 0)
-            end
-        end)
-    else
-        if Connections_Manager['Spinbot'] then
-            Connections_Manager['Spinbot']:Disconnect()
-            Connections_Manager['Spinbot'] = nil
-        end
-    end
-end, "Spinbot")
+local SpeedSection = PlayerTab:CreateSection("Speed")
 
-local AnimationSection = PlayerTab.Section("Animation")
-AnimationSection.Label("Custom Animations")
-AnimationSection.Dropdown("Emote", Emotes_Data, function(value)
-    Auto_Parry.Play_Animation(value)
-end)
-AnimationSection.Button("Reset Animation", function()
-    if Animation.track then
-        Animation.track:Stop()
-        Animation.track = nil
-        Animation.current = nil
-    end
-end)
+SpeedSection:CreateToggle({
+   Name = "Enabled",
+   CurrentValue = false,
+   Callback = function(value)
+      if value then
+         Connections_Manager['Strafe'] = RunService.PreSimulation:Connect(function()
+            local character = LocalPlayer.Character
+            if character and character:FindFirstChild("Humanoid") then
+               character.Humanoid.WalkSpeed = StrafeSpeed
+            end
+         end)
+      else
+         local character = LocalPlayer.Character
+         if character and character:FindFirstChild("Humanoid") then
+            character.Humanoid.WalkSpeed = 36
+         end
+         if Connections_Manager['Strafe'] then
+            Connections_Manager['Strafe']:Disconnect()
+            Connections_Manager['Strafe'] = nil
+         end
+      end
+   end
+})
+
+SpeedSection:CreateSlider({
+   Name = "Speed",
+   Range = {36, 200},
+   Increment = 1,
+   CurrentValue = 36,
+   Callback = function(value)
+      StrafeSpeed = value
+   end
+})
+
+local SpinbotSection = PlayerTab:CreateSection("Spinbot")
+
+SpinbotSection:CreateToggle({
+   Name = "Enabled",
+   CurrentValue = false,
+   Flag = "Spinbot",
+   Callback = function(value)
+      if value then
+         getgenv().spin = true
+         getgenv().spinSpeed = getgenv().spinSpeed or 1
+         local Players = game:GetService("Players")
+         local RunService = game:GetService("RunService")
+         local Client = Players.LocalPlayer
+         local function spinCharacter()
+            while getgenv().spin do
+               RunService.Heartbeat:Wait()
+               local char = Client.Character
+               local funcHRP = char and char:FindFirstChild("HumanoidRootPart")
+               if char and funcHRP then
+                  funcHRP.CFrame *= CFrame.Angles(0, getgenv().spinSpeed, 0)
+               end
+            end
+         end
+         if not getgenv().spinThread then
+            getgenv().spinThread = coroutine.create(spinCharacter)
+            coroutine.resume(getgenv().spinThread)
+         end
+      else
+         getgenv().spin = false
+         if getgenv().spinThread then
+            getgenv().spinThread = nil
+         end
+      end
+   end
+})
+
+SpinbotSection:CreateSlider({
+   Name = "Speed",
+   Range = {1, 100},
+   Increment = 1,
+   CurrentValue = 1,
+   Callback = function(value)
+      getgenv().spinSpeed = math.rad(value)
+   end
+})
+
+local FieldOfViewSection = PlayerTab:CreateSection("Field of View")
+
+FieldOfViewSection:CreateToggle({
+   Name = "Enabled",
+   CurrentValue = false,
+   Flag = "CameraEnabled",
+   Callback = function(value)
+      local Camera = Workspace.CurrentCamera
+      if value then
+         getgenv().CameraFOV = getgenv().CameraFOV or 70
+         Camera.FieldOfView = getgenv().CameraFOV
+         if not getgenv().FOVLoop then
+            getgenv().FOVLoop = RunService.RenderStepped:Connect(function()
+               if Rayfield:GetFlag("CameraEnabled") then
+                  Camera.FieldOfView = getgenv().CameraFOV
+               end
+            end)
+         end
+      else
+         Camera.FieldOfView = 70
+         if getgenv().FOVLoop then
+            getgenv().FOVLoop:Disconnect()
+            getgenv().FOVLoop = nil
+         end
+      end
+   end
+})
+
+FieldOfViewSection:CreateSlider({
+   Name = "FOV",
+   Range = {50, 150},
+   Increment = 1,
+   CurrentValue = 70,
+   Callback = function(value)
+      getgenv().CameraFOV = value
+      if Rayfield:GetFlag("CameraEnabled") then
+         Workspace.CurrentCamera.FieldOfView = value
+      end
+   end
+})
+
+local PlayerCosmeticsSection = PlayerTab:CreateSection("Player Cosmetics")
+
+_G.PlayerCosmeticsCleanup = {}
+
+PlayerCosmeticsSection:CreateToggle({
+   Name = "Korblox/Headless",
+   CurrentValue = false,
+   Callback = function(value)
+      local players = game:GetService("Players")
+      local lp = players.LocalPlayer
+      local function applyKorblox(character)
+         local rightLeg = character:FindFirstChild("RightLeg") or character:FindFirstChild("Right Leg")
+         if not rightLeg then
+            warn("Right leg not found on character")
+            return
+         end
+         for _, child in pairs(rightLeg:GetChildren()) do
+            if child:IsA("SpecialMesh") then
+               child:Destroy()
+            end
+         end
+         local specialMesh = Instance.new("SpecialMesh")
+         specialMesh.MeshId = "rbxassetid://101851696"
+         specialMesh.TextureId = "rbxassetid://115727863"
+         specialMesh.Scale = Vector3.new(1, 1, 1)
+         specialMesh.Parent = rightLeg
+      end
+      local function saveRightLegProperties(char)
+         if char then
+            local rightLeg = char:FindFirstChild("RightLeg") or char:FindFirstChild("Right Leg")
+            if rightLeg then
+               local originalMesh = rightLeg:FindFirstChildOfClass("SpecialMesh")
+               if originalMesh then
+                  _G.PlayerCosmeticsCleanup.originalMeshId = originalMesh.MeshId
+                  _G.PlayerCosmeticsCleanup.originalTextureId = originalMesh.TextureId
+                  _G.PlayerCosmeticsCleanup.originalScale = originalMesh.Scale
+               else
+                  _G.PlayerCosmeticsCleanup.hadNoMesh = true
+               end
+               _G.PlayerCosmeticsCleanup.rightLegChildren = {}
+               for _, child in pairs(rightLeg:GetChildren()) do
+                  if child:IsA("SpecialMesh") then
+                     table.insert(_G.PlayerCosmeticsCleanup.rightLegChildren, {
+                        ClassName = child.ClassName,
+                        Properties = {
+                           MeshId = child.MeshId,
+                           TextureId = child.TextureId,
+                           Scale = child.Scale
+                        }
+                     })
+                  end
+               end
+            end
+         end
+      end
+      local function restoreRightLeg(char)
+         if char then
+            local rightLeg = char:FindFirstChild("RightLeg") or char:FindFirstChild("Right Leg")
+            if rightLeg and _G.PlayerCosmeticsCleanup.rightLegChildren then
+               for _, child in pairs(rightLeg:GetChildren()) do
+                  if child:IsA("SpecialMesh") then
+                     child:Destroy()
+                  end
+               end
+               if _G.PlayerCosmeticsCleanup.hadNoMesh then
+                  return
+               end
+               for _, childData in ipairs(_G.PlayerCosmeticsCleanup.rightLegChildren) do
+                  if childData.ClassName == "SpecialMesh" then
+                     local newMesh = Instance.new("SpecialMesh")
+                     newMesh.MeshId = childData.Properties.MeshId
+                     newMesh.TextureId = childData.Properties.TextureId
+                     newMesh.Scale = childData.Properties.Scale
+                     newMesh.Parent = rightLeg
+                  end
+               end
+            end
+         end
+      end
+      if value then
+         CosmeticsActive = true
+         getgenv().Config = {
+            Headless = true
+         }
+         if lp.Character then
+            local head = lp.Character:FindFirstChild("Head")
+            if head and getgenv().Config.Headless then
+               _G.PlayerCosmeticsCleanup.headTransparency = head.Transparency
+               local decal = head:FindFirstChildOfClass("Decal")
+               if decal then
+                  _G.PlayerCosmeticsCleanup.faceDecalId = decal.Texture
+                  _G.PlayerCosmeticsCleanup.faceDecalName = decal.Name
+               end
+            end
+            saveRightLegProperties(lp.Character)
+            applyKorblox(lp.Character)
+         end
+         _G.PlayerCosmeticsCleanup.characterAddedConn = lp.CharacterAdded:Connect(function(char)
+            local head = char:FindFirstChild("Head")
+            if head and getgenv().Config.Headless then
+               _G.PlayerCosmeticsCleanup.headTransparency = head.Transparency
+               local decal = head:FindFirstChildOfClass("Decal")
+               if decal then
+                  _G.PlayerCosmeticsCleanup.faceDecalId = decal.Texture
+                  _G.PlayerCosmeticsCleanup.faceDecalName = decal.Name
+               end
+            end
+            saveRightLegProperties(char)
+            applyKorblox(char)
+         end)
+         if getgenv().Config.Headless then
+            headLoop = task.spawn(function()
+               while CosmeticsActive do
+                  local char = lp.Character
+                  if char then
+                     local head = char:FindFirstChild("Head")
+                     if head then
+                        head.Transparency = 1
+                        local decal = head:FindFirstChildOfClass("Decal")
+                        if decal then
+                           decal:Destroy()
+                        end
+                     end
+                  end
+                  task.wait(0.1)
+               end
+            end)
+         end
+      else
+         CosmeticsActive = false
+         if _G.PlayerCosmeticsCleanup.characterAddedConn then
+            _G.PlayerCosmeticsCleanup.characterAddedConn:Disconnect()
+            _G.PlayerCosmeticsCleanup.characterAddedConn = nil
+         end
+         if headLoop then
+            task.cancel(headLoop)
+            headLoop = nil
+         end
+         local char = lp.Character
+         if char then
+            local head = char:FindFirstChild("Head")
+            if head and _G.PlayerCosmeticsCleanup.headTransparency then
+               head.Transparency = _G.PlayerCosmeticsCleanup.headTransparency
+               if _G.PlayerCosmeticsCleanup.faceDecalId then
+                  local newDecal = head:FindFirstChildOfClass("Decal") or Instance.new("Decal", head)
+                  newDecal.Name = _G.PlayerCosmeticsCleanup.faceDecalName or "face"
+                  newDecal.Texture = _G.PlayerCosmeticsCleanup.faceDecalId
+                  newDecal.Face = Enum.NormalId.Front
+               end
+            end
+            restoreRightLeg(char)
+         end
+         _G.PlayerCosmeticsCleanup = {}
+      end
+   end
+})
+
+-- New Feature: Custom Accessories
+local CustomAccessoriesSection = PlayerTab:CreateSection("Custom Accessories")
+
+CustomAccessoriesSection:CreateToggle({
+   Name = "Custom Hat",
+   CurrentValue = false,
+   Callback = function(value)
+      if value then
+         local hat = Instance.new("Accessory")
+         local handle = Instance.new("Part")
+         handle.Name = "Handle"
+         handle.Size = Vector3.new(1, 1, 1)
+         handle.Parent = hat
+         local mesh = Instance.new("SpecialMesh")
+         mesh.MeshId = "rbxassetid://123456789" -- Replace with desired hat mesh ID
+         mesh.TextureId = "rbxassetid://123456790" -- Replace with desired texture ID
+         mesh.Parent = handle
+         hat.Parent = LocalPlayer.Character
+      else
+         for _, accessory in pairs(LocalPlayer.Character:GetChildren()) do
+            if accessory:IsA("Accessory") and accessory.Name == "Accessory" then
+               accessory:Destroy()
+            end
+         end
+      end
+   end
+})
 
 -- Visuals Tab
-local ESPSection = VisualsTab.Section("ESP")
-ESPSection.Label("Visual Enhancements")
-ESPSection.Toggle("Player ESP", function(value)
-    espEnabled = value
-    if value then
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character then
-                local highlight = Instance.new("Highlight")
-                highlight.Parent = player.Character
-                highlight.FillColor = Color3.fromRGB(255, 0, 0)
-                highlight.OutlineColor = Color3.new(1, 1, 1)
-                espConnections[player] = highlight
-            end
-        end
-        Connections_Manager['ESP'] = Players.PlayerAdded:Connect(function(player)
-            player.CharacterAdded:Connect(function(character)
-                if espEnabled then
-                    local highlight = Instance.new("Highlight")
-                    highlight.Parent = character
-                    highlight.FillColor = Color3.fromRGB(255, 0, 0)
-                    highlight.OutlineColor = Color3.new(1, 1, 1)
-                    espConnections[player] = highlight
-                end
-            end)
-        end)
-    else
-        for player, highlight in pairs(espConnections) do
-            if highlight then
-                highlight:Destroy()
-            end
-        end
-        espConnections = {}
-        if Connections_Manager['ESP'] then
-            Connections_Manager['ESP']:Disconnect()
-            Connections_Manager['ESP'] = nil
-        end
-    end
-end)
+local ESPSection = VisualsTab:CreateSection("ESP")
 
-ESPSection.Toggle("Name Tags", function(value)
-    nameTagsEnabled = value
-    if value then
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
-                local billboard = Instance.new("BillboardGui")
-                billboard.Parent = player.Character.Head
-                billboard.Size = UDim2.new(0, 200, 0, 50)
-                billboard.StudsOffset = Vector3.new(0, 3, 0)
-                billboard.AlwaysOnTop = true
-                local nameLabel = Instance.new("TextLabel")
-                nameLabel.Size = UDim2.new(1, 0, 1, 0)
-                nameLabel.BackgroundTransparency = 1
-                nameLabel.Text = player.Name
-                nameLabel.TextColor3 = Color3.new(1, 1, 1)
-                nameLabel.Font = Enum.Font.GothamBold
-                nameLabel.TextSize = 14
-                nameLabel.Parent = billboard
-                nameTagsConnections[player] = billboard
+ESPSection:CreateToggle({
+   Name = "Enabled",
+   CurrentValue = false,
+   Callback = function(value)
+      espEnabled = value
+      if value then
+         for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+               local highlight = Instance.new("Highlight")
+               highlight.Adornee = player.Character
+               highlight.FillColor = Color3.new(1, 0, 0)
+               highlight.OutlineColor = Color3.new(1, 1, 1)
+               highlight.Parent = player.Character
+               espConnections[player] = highlight
             end
-        end
-        Connections_Manager['NameTags'] = Players.PlayerAdded:Connect(function(player)
-            player.CharacterAdded:Connect(function(character)
-                if nameTagsEnabled then
-                    local billboard = Instance.new("BillboardGui")
-                    billboard.Parent = character:WaitForChild("Head")
-                    billboard.Size = UDim2.new(0, 200, 0, 50)
-                    billboard.StudsOffset = Vector3.new(0, 3, 0)
-                    billboard.AlwaysOnTop = true
-                    local nameLabel = Instance.new("TextLabel")
-                    nameLabel.Size = UDim2.new(1, 0, 1, 0)
-                    nameLabel.BackgroundTransparency = 1
-                    nameLabel.Text = player.Name
-                    nameLabel.TextColor3 = Color3.new(1, 1, 1)
-                    nameLabel.Font = Enum.Font.GothamBold
-                    nameLabel.TextSize = 14
-                    nameLabel.Parent = billboard
-                    nameTagsConnections[player] = billboard
-                end
-            end)
-        end)
-    else
-        for player, billboard in pairs(nameTagsConnections) do
-            if billboard then
-                billboard:Destroy()
+         end
+         espConnections["playerAdded"] = Players.PlayerAdded:Connect(function(player)
+            if player ~= LocalPlayer then
+               player.CharacterAdded:Connect(function(character)
+                  local highlight = Instance.new("Highlight")
+                  highlight.Adornee = character
+                  highlight.FillColor = Color3.new(1, 0, 0)
+                  highlight.OutlineColor = Color3.new(1, 1, 1)
+                  highlight.Parent = character
+                  espConnections[player] = highlight
+               end)
             end
-        end
-        nameTagsConnections = {}
-        if Connections_Manager['NameTags'] then
-            Connections_Manager['NameTags']:Disconnect()
-            Connections_Manager['NameTags'] = nil
-        end
-    end
-end)
+         end)
+      else
+         for _, highlight in pairs(espConnections) do
+            if typeof(highlight) == "Instance" then
+               highlight:Destroy()
+            elseif highlight.Disconnect then
+               highlight:Disconnect()
+            end
+         end
+         espConnections = {}
+      end
+   end
+})
 
-ESPSection.Toggle("Chams", function(value)
-    chamsEnabled = value
-    if value then
-        for _, player in pairs(Players:GetPlayers()) do
+local NameTagsSection = VisualsTab:CreateSection("Name Tags")
+
+NameTagsSection:CreateToggle({
+   Name = "Enabled",
+   CurrentValue = false,
+   Callback = function(value)
+      nameTagsEnabled = value
+      if value then
+         for _, player in pairs(Players:GetPlayers()) do
             if player ~= LocalPlayer and player.Character then
-                for _, part in pairs(player.Character:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        local surfaceGui = Instance.new("SurfaceGui")
-                        surfaceGui.Parent = part
-                        surfaceGui.Face = Enum.NormalId.Front
+               local billboard = Instance.new("BillboardGui")
+               billboard.Name = "NameTag"
+               billboard.Size = UDim2.new(0, 200, 0, 50)
+               billboard.StudsOffset = Vector3.new(0, 3, 0)
+               billboard.AlwaysOnTop = true
+               billboard.Adornee = player.Character:FindFirstChild("Head")
+               billboard.Parent = player.Character
+
+               local textLabel = Instance.new("TextLabel")
+               textLabel.Size = UDim2.new(1, 0, 1, 0)
+               textLabel.BackgroundTransparency = 1
+               textLabel.Text = player.Name
+               textLabel.TextColor3 = Color3.new(1, 1, 1)
+               textLabel.TextStrokeTransparency = 0.5
+               textLabel.Font = Enum.Font.SourceSansBold
+               textLabel.TextSize = 18
+               textLabel.Parent = billboard
+
+               nameTagsConnections[player] = billboard
+            end
+         end
+         nameTagsConnections["playerAdded"] = Players.PlayerAdded:Connect(function(player)
+            if player ~= LocalPlayer then
+               player.CharacterAdded:Connect(function(character)
+                  local billboard = Instance.new("BillboardGui")
+                  billboard.Name = "NameTag"
+                  billboard.Size = UDim2.new(0, 200, 0, 50)
+                  billboard.StudsOffset = Vector3.new(0, 3, 0)
+                  billboard.AlwaysOnTop = true
+                  billboard.Adornee = character:FindFirstChild("Head")
+                  billboard.Parent = character
+
+                  local textLabel = Instance.new("TextLabel")
+                  textLabel.Size = UDim2.new(1, 0, 1, 0)
+                  textLabel.BackgroundTransparency = 1
+                  textLabel.Text = player.Name
+                  textLabel.TextColor3 = Color3.new(1, 1, 1)
+                  textLabel.TextStrokeTransparency = 0.5
+                  textLabel.Font = Enum.Font.SourceSansBold
+                  textLabel.TextSize = 18
+                  textLabel.Parent = billboard
+
+                  nameTagsConnections[player] = billboard
+               end)
+            end
+         end)
+      else
+         for _, billboard in pairs(nameTagsConnections) do
+            if typeof(billboard) == "Instance" then
+               billboard:Destroy()
+            elseif billboard.Disconnect then
+               billboard:Disconnect()
+            end
+         end
+         nameTagsConnections = {}
+      end
+   end
+})
+
+local ChamsSection = VisualsTab:CreateSection("Chams")
+
+frame.BorderSizePixel = 0
+                     frame.Parent = cham
+
+                     chamsConnections[part] = cham
+                  end
+               end
+            end
+         end
+         chamsConnections["playerAdded"] = Players.PlayerAdded:Connect(function(player)
+            if player ~= LocalPlayer then
+               player.CharacterAdded:Connect(function(character)
+                  for _, part in pairs(character:GetDescendants()) do
+                     if part:IsA("MeshPart") or part:IsA("Part") then
+                        local cham = Instance.new("SurfaceGui")
+                        cham.Name = "Cham"
+                        cham.AlwaysOnTop = true
+                        cham.Adornee = part
+                        cham.Parent = part
+
                         local frame = Instance.new("Frame")
                         frame.Size = UDim2.new(1, 0, 1, 0)
-                        frame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+                        frame.BackgroundColor3 = Color3.new(0, 1, 0)
                         frame.BackgroundTransparency = 0.5
-                        frame.Parent = surfaceGui
-                        chamsConnections[#chamsConnections + 1] = surfaceGui
-                    end
-                end
-            end
-        end
-        Connections_Manager['Chams'] = Players.PlayerAdded:Connect(function(player)
-            player.CharacterAdded:Connect(function(character)
-                if chamsEnabled then
-                    for _, part in pairs(character:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            local surfaceGui = Instance.new("SurfaceGui")
-                            surfaceGui.Parent = part
-                            surfaceGui.Face = Enum.NormalId.Front
-                            local frame = Instance.new("Frame")
-                            frame.Size = UDim2.new(1, 0, 1, 0)
-                            frame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-                            frame.BackgroundTransparency = 0.5
-                            frame.Parent = surfaceGui
-                            chamsConnections[#chamsConnections + 1] = surfaceGui
-                        end
-                    end
-                end
-            end)
-        end)
-    else
-        for _, gui in pairs(chamsConnections) do
-            if gui then
-                gui:Destroy()
-            end
-        end
-        chamsConnections = {}
-        if Connections_Manager['Chams'] then
-            Connections_Manager['Chams']:Disconnect()
-            Connections_Manager['Chams'] = nil
-        end
-    end
-end)
+                        frame.BorderSizePixel = 0
+                        frame.Parent = cham
 
-local LightingSection = VisualsTab.Section("Lighting")
-LightingSection.Toggle("Full Bright", function(value)
-    fullbrightEnabled = value
-    if value then
-        Lighting.Brightness = 2
-        Lighting.Ambient = Color3.new(1, 1, 1)
-        Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
-        Lighting.FogEnd = 100000
-        Connections_Manager['FullBright'] = RunService.Heartbeat:Connect(function()
+                        chamsConnections[part] = cham
+                     end
+                  end
+               end)
+            end
+         end)
+      else
+         for _, cham in pairs(chamsConnections) do
+            if typeof(cham) == "Instance" then
+               cham:Destroy()
+            elseif cham.Disconnect then
+               cham:Disconnect()
+            end
+         end
+         chamsConnections = {}
+      end
+   end
+})
+
+local FullbrightSection = VisualsTab:CreateSection("Fullbright")
+
+FullbrightSection:CreateToggle({
+   Name = "Enabled",
+   CurrentValue = false,
+   Callback = function(value)
+      fullbrightEnabled = value
+      if value then
+         Lighting.Brightness = 2
+         Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+         Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+         Lighting.FogEnd = 100000
+         Connections_Manager['Fullbright'] = RunService.RenderStepped:Connect(function()
             Lighting.Brightness = 2
-            Lighting.Ambient = Color3.new(1, 1, 1)
-            Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
+            Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+            Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
             Lighting.FogEnd = 100000
-        end)
-    else
-        Lighting.Brightness = originalLighting.Brightness
-        Lighting.Ambient = originalLighting.Ambient
-        Lighting.OutdoorAmbient = originalLighting.OutdoorAmbient
-        Lighting.FogEnd = originalLighting.FogEnd
-        if Connections_Manager['FullBright'] then
-            Connections_Manager['FullBright']:Disconnect()
-            Connections_Manager['FullBright'] = nil
-        end
-    end
-end)
+         end)
+      else
+         Lighting.Brightness = originalLighting.Brightness
+         Lighting.Ambient = originalLighting.Ambient
+         Lighting.OutdoorAmbient = originalLighting.OutdoorAmbient
+         Lighting.FogEnd = originalLighting.FogEnd
+         if Connections_Manager['Fullbright'] then
+            Connections_Manager['Fullbright']:Disconnect()
+            Connections_Manager['Fullbright'] = nil
+         end
+      end
+   end
+})
 
-LightingSection.Dropdown("Skybox", {"None", "Midnight", "Space", "Galaxy", "Christmas"}, function(value)
-    if value == "None" then
-        if currentSkybox then
-            currentSkybox:Destroy()
-            currentSkybox = nil
-        end
-    else
-        applySkybox(value)
-    end
-end)
+local CrosshairSection = VisualsTab:CreateSection("Crosshair")
 
-LightingSection.Dropdown("Shader", {"None", "Mid Purple Day", "Mid Pink Day", "Mid Day", "Evening", "Night"}, function(value)
-    if value == "None" then
-        if currentShader then
-            currentShader:Destroy()
-            currentShader = nil
-        end
-    else
-        applyShader(value)
-    end
-end)
+CrosshairSection:CreateToggle({
+   Name = "Enabled",
+   CurrentValue = false,
+   Callback = function(value)
+      crosshairEnabled = value
+      if value then
+         if not crosshairGui then
+            crosshairGui = Instance.new("ScreenGui")
+            crosshairGui.Name = "CrosshairGui"
+            crosshairGui.ResetOnSpawn = false
+            crosshairGui.Parent = CoreGui
 
-LightingSection.ColorPicker("Sky Color", Color3.new(1, 1, 1), function(color)
-    applySkyColor(color)
-end)
+            local centerFrame = Instance.new("Frame")
+            centerFrame.Size = UDim2.new(0, 20, 0, 20)
+            centerFrame.Position = UDim2.new(0.5, -10, 0.5, -10)
+            centerFrame.BackgroundTransparency = 1
+            centerFrame.Parent = crosshairGui
 
-local CrosshairSection = VisualsTab.Section("Crosshair")
-CrosshairSection.Toggle("Crosshair", function(value)
-    crosshairEnabled = value
-    if value then
-        crosshairGui = Instance.new("ScreenGui")
-        crosshairGui.Parent = CoreGui
-        local crosshair = Instance.new("Frame")
-        crosshair.Size = UDim2.new(0, 20, 0, 2)
-        crosshair.Position = UDim2.new(0.5, -10, 0.5, -1)
-        crosshair.BackgroundColor3 = Color3.new(1, 1, 1)
-        crosshair.Parent = crosshairGui
-        local crosshair2 = Instance.new("Frame")
-        crosshair2.Size = UDim2.new(0, 2, 0, 20)
-        crosshair2.Position = UDim2.new(0.5, -1, 0.5, -10)
-        crosshair2.BackgroundColor3 = Color3.new(1, 1, 1)
-        crosshair2.Parent = crosshairGui
-    else
-        if crosshairGui then
+            local horizontal = Instance.new("Frame")
+            horizontal.Size = UDim2.new(0, 20, 0, 2)
+            horizontal.Position = UDim2.new(0.5, -10, 0.5, -1)
+            horizontal.BackgroundColor3 = Color3.new(1, 0, 0)
+            horizontal.BorderSizePixel = 0
+            horizontal.Parent = centerFrame
+
+            local vertical = Instance.new("Frame")
+            vertical.Size = UDim2.new(0, 2, 0, 20)
+            vertical.Position = UDim2.new(0.5, -1, 0.5, -10)
+            vertical.BackgroundColor3 = Color3.new(1, 0, 0)
+            vertical.BorderSizePixel = 0
+            vertical.Parent = centerFrame
+         end
+      else
+         if crosshairGui then
             crosshairGui:Destroy()
             crosshairGui = nil
-        end
-    end
-end)
+         end
+      end
+   end
+})
+
+local SkyboxSection = VisualsTab:CreateSection("Skybox")
+
+SkyboxSection:CreateDropdown({
+   Name = "Select Skybox",
+   Options = {"None", "Midnight", "Space", "Galaxy", "Christmas"},
+   CurrentOption = "None",
+   Callback = function(value)
+      if value == "None" then
+         if currentSkybox then
+            currentSkybox:Destroy()
+            currentSkybox = nil
+         end
+      else
+         applySkybox(value)
+      end
+   end
+})
+
+local ShaderSection = VisualsTab:CreateSection("Shader")
+
+ShaderSection:CreateDropdown({
+   Name = "Select Shader",
+   Options = {"None", "Mid Purple Day", "Mid Pink Day", "Mid Day", "Evening", "Night"},
+   CurrentOption = "None",
+   Callback = function(value)
+      if value == "None" then
+         if currentShader then
+            currentShader:Destroy()
+            currentShader = nil
+         end
+      else
+         applyShader(value)
+      end
+   end
+})
+
+local SkyColorSection = VisualsTab:CreateSection("Sky Color")
+
+SkyColorSection:CreateColorPicker({
+   Name = "Sky Color",
+   Color = Color3.fromRGB(135, 206, 235),
+   Callback = function(value)
+      applySkyColor(value)
+   end
+})
+
+SkyColorSection:CreateButton({
+   Name = "Reset Sky Color",
+   Callback = function()
+      if skyColorConnection then
+         skyColorConnection:Disconnect()
+         skyColorConnection = nil
+      end
+      Lighting.Ambient = originalLighting.Ambient
+      Lighting.OutdoorAmbient = originalLighting.OutdoorAmbient
+   end
+})
 
 -- Misc Tab
-local AutoManualSpamSection = MiscTab.Section("Auto Manual Spam")
-AutoManualSpamSection.Toggle("Enabled", function(value)
-    AutoManualSpamEnabled = value
-    if value then
-        local screenGui = Instance.new("ScreenGui")
-        screenGui.Parent = CoreGui
-        screenGui.Name = "ManualSpamUI"
-        local button = Instance.new("TextButton")
-        button.Size = UDim2.new(0, 100, 0, 50)
-        button.Position = UDim2.new(0.5, -50, 0.8, -25)
-        button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        button.Text = "Manual Spam"
-        button.TextColor3 = Color3.new(1, 1, 1)
-        button.Font = Enum.Font.GothamBold
-        button.TextSize = 14
-        button.Parent = screenGui
-        local buttonUICorner = Instance.new("UICorner")
-        buttonUICorner.CornerRadius = UDim.new(0, 8)
-        buttonUICorner.Parent = button
-        button.MouseButton1Click:Connect(function()
-            ManualSpamActive = not ManualSpamActive
-            button.Text = ManualSpamActive and "Stop Spam" or "Manual Spam"
-            if ManualSpamActive then
-                Connections_Manager['ManualSpam'] = RunService.Heartbeat:Connect(function()
-                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, game)
-                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.F, false, game)
-                end)
-            else
-                if Connections_Manager['ManualSpam'] then
-                    Connections_Manager['ManualSpam']:Disconnect()
-                    Connections_Manager['ManualSpam'] = nil
-                end
+local AnimationsSection = MiscTab:CreateSection("Animations")
+
+AnimationsSection:CreateDropdown({
+   Name = "Play Animation",
+   Options = Emotes_Data,
+   CurrentOption = "None",
+   Callback = function(value)
+      if value ~= "None" then
+         Auto_Parry.Play_Animation(value)
+      end
+   end
+})
+
+local MusicSection = MiscTab:CreateSection("Music")
+
+MusicSection:CreateTextbox({
+   Name = "Music ID",
+   CurrentText = "",
+   PlaceholderText = "Enter Music ID",
+   Callback = function(value)
+      playMusic(value)
+   end
+})
+
+MusicSection:CreateButton({
+   Name = "Pause Music",
+   Callback = function()
+      pauseMusic()
+   end
+})
+
+local HitSoundSection = MiscTab:CreateSection("Hit Sound")
+
+HitSoundSection:CreateToggle({
+   Name = "Enabled",
+   CurrentValue = false,
+   Callback = function(value)
+      hit_Sound_Enabled = value
+      if value then
+         Connections_Manager['Hit Sound'] = Workspace.Balls.ChildRemoved:Connect(function(ball)
+            if ball:GetAttribute("realBall") and hit_Sound_Enabled then
+               local sound = Instance.new("Sound")
+               sound.SoundId = "rbxassetid://123456789" -- Replace with desired hit sound ID
+               sound.Parent = Workspace
+               sound:Play()
+               Debris:AddItem(sound, 2)
             end
-        end)
-        Connections_Manager['ManualSpamUI'] = screenGui
-    else
-        if Connections_Manager['ManualSpamUI'] then
-            Connections_Manager['ManualSpamUI']:Destroy()
-            Connections_Manager['ManualSpamUI'] = nil
-        end
-        if Connections_Manager['ManualSpam'] then
-            Connections_Manager['ManualSpam']:Disconnect()
-            Connections_Manager['ManualSpam'] = nil
-        end
-        ManualSpamActive = false
-    end
-end, "ManualSpamUI")
+         end)
+      else
+         if Connections_Manager['Hit Sound'] then
+            Connections_Manager['Hit Sound']:Disconnect()
+            Connections_Manager['Hit Sound'] = nil
+         end
+      end
+   end
+})
 
-local BallPauseSection = MiscTab.Section("Ball Pause")
-BallPauseSection.Toggle("Enabled", function(value)
-    BallPauseEnabled = value
-    if value then
-        Connections_Manager['BallPause'] = RunService.Heartbeat:Connect(pauseBall)
-    else
-        if Connections_Manager['BallPause'] then
-            Connections_Manager['BallPause']:Disconnect()
-            Connections_Manager['BallPause'] = nil
-        end
-    end
-end)
-BallPauseSection.Slider("Distance Threshold", 10, 5, 50, function(value)
-    BallPauseDistanceThreshold = value
+-- Settings Tab
+local ConfigSection = SettingsTab:CreateSection("Configuration")
+
+ConfigSection:CreateButton({
+   Name = "Save Config",
+   Callback = function()
+      Rayfield:SaveConfiguration()
+      Rayfield:Notify({
+         Title = "Configuration Saved",
+         Content = "Your settings have been saved successfully.",
+         Duration = 3
+      })
+   end
+})
+
+ConfigSection:CreateButton({
+   Name = "Load Config",
+   Callback = function()
+      Rayfield:LoadConfiguration()
+      Rayfield:Notify({
+         Title = "Configuration Loaded",
+         Content = "Your settings have been loaded successfully.",
+         Duration = 3
+      })
+   end
+})
+
+local KeybindSection = SettingsTab:CreateSection("Keybinds")
+
+KeybindSection:CreateKeybind({
+   Name = "Toggle UI",
+   CurrentKeybind = Enum.KeyCode.RightControl,
+   Callback = function()
+      Rayfield:Toggle()
+   end
+})
+
+-- Credits Tab
+local CreditsSection = CreditsTab:CreateSection("Credits")
+
+CreditsSection:CreateLabel("Script Developer: Kryp")
+CreditsSection:CreateLabel("UI Library: Rayfield")
+CreditsSection:CreateLabel("Special Thanks: xAI for Grok 3")
+CreditsSection:CreateButton({
+   Name = "Join Discord",
+   Callback = function()
+      Rayfield:Notify({
+         Title = "Join Our Discord",
+         Content = "Check the Discord invite in the UI settings!",
+         Duration = 5
+      })
+   end
+})
+
+-- Initialize Connections
+Connections_Manager['Ball Monitor'] = Workspace.Balls.ChildAdded:Connect(function(ball)
+   if ball:GetAttribute("realBall") then
+      ball:GetAttributeChangedSignal('target'):Once(function()
+         Parried = false
+         Phantom = ball:GetAttribute('target') == tostring(LocalPlayer)
+         if ball:GetAttribute('from') == tostring(LocalPlayer) then
+            Phantom = false
+         end
+      end)
+   end
 end)
 
-local MusicSection = MiscTab.Section("Music Player")
-MusicSection.Textbox("Music ID", "Enter Music ID", function(value)
-    playMusic(value)
+Connections_Manager['Infinity Detection'] = RunService.Heartbeat:Connect(function()
+   local Ball = Auto_Parry.Get_Ball()
+   if not Ball then
+      Infinity = false
+      return
+   end
+   local Zoomies = Ball:FindFirstChild('zoomies')
+   if not Zoomies then
+      Infinity = false
+      return
+   end
+   local Ball_Velocity = Zoomies.VectorVelocity
+   local Ball_Speed = Ball_Velocity.Magnitude
+   if Ball_Speed < 10 then
+      Infinity = true
+   else
+      Infinity = false
+   end
 end)
-MusicSection.Button("Pause Music", pauseMusic)
 
-local CosmeticSection = MiscTab.Section("Cosmetics")
-CosmeticSection.Toggle("Cosmetics", function(value)
-    CosmeticsActive = value
-    -- Placeholder for cosmetic application (requires game-specific implementation)
+Connections_Manager['Input Detection'] = UserInputService.LastInputTypeChanged:Connect(function(input)
+   Last_Input = input
 end)
 
--- Input Handling
-UserInputService.InputBegan:Connect(function(input)
-    Last_Input = input.UserInputType
-end)
-
--- Cleanup on Game Close
+-- Cleanup on Script End
 game:BindToClose(function()
-    for _, connection in pairs(Connections_Manager) do
-        if typeof(connection) == "RBXScriptConnection" then
-            connection:Disconnect()
-        elseif connection:IsA("Instance") then
-            connection:Destroy()
-        end
-    end
-    if skyColorConnection then
-        skyColorConnection:Disconnect()
-    end
-    if currentSkybox then
-        currentSkybox:Destroy()
-    end
-    if currentShader then
-        currentShader:Destroy()
-    end
-    if musicPlayer then
-        musicPlayer:Destroy()
-    end
-    if crosshairGui then
-        crosshairGui:Destroy()
-    end
-    VisualUI:Destroy()
+   for _, connection in pairs(Connections_Manager) do
+      if connection then
+         connection:Disconnect()
+      end
+   end
+   if getgenv().FOVLoop then
+      getgenv().FOVLoop:Disconnect()
+   end
+   if getgenv().spinThread then
+      getgenv().spin = false
+      getgenv().spinThread = nil
+   end
+   if musicPlayer then
+      musicPlayer:Destroy()
+   end
+   if currentSkybox then
+      currentSkybox:Destroy()
+   end
+   if currentShader then
+      currentShader:Destroy()
+   end
+   if skyColorConnection then
+      skyColorConnection:Disconnect()
+   end
+   if crosshairGui then
+      crosshairGui:Destroy()
+   end
+   if CoreGui:FindFirstChild("ManualSpamUI") then
+      CoreGui:FindFirstChild("ManualSpamUI"):Destroy()
+   end
+   for _, highlight in pairs(espConnections) do
+      if typeof(highlight) == "Instance" then
+         highlight:Destroy()
+      elseif highlight.Disconnect then
+         highlight:Disconnect()
+      end
+   end
+   for _, billboard in pairs(nameTagsConnections) do
+      if typeof(billboard) == "Instance" then
+         billboard:Destroy()
+      elseif billboard.Disconnect then
+         billboard:Disconnect()
+      end
+   end
+   for _, cham in pairs(chamsConnections) do
+      if typeof(cham) == "Instance" then
+         cham:Destroy()
+      elseif cham.Disconnect then
+         cham:Disconnect()
+      end
+   end
+   if headLoop then
+      task.cancel(headLoop)
+   end
+   if _G.PlayerCosmeticsCleanup.characterAddedConn then
+      _G.PlayerCosmeticsCleanup.characterAddedConn:Disconnect()
+   end
+   Lighting.Brightness = originalLighting.Brightness
+   Lighting.Ambient = originalLighting.Ambient
+   Lighting.OutdoorAmbient = originalLighting.OutdoorAmbient
+   Lighting.FogEnd = originalLighting.FogEnd
 end)
 
--- Initial Tab Selection
-Tabs["Blatant"].Button:FireEvent("MouseButton1Click")
+-- Notify User of Successful Load
+Rayfield:Notify({
+   Title = "Kryp Paid Hub Loaded",
+   Content = "Welcome to Kryp Paid Hub! Enjoy the features.",
+   Duration = 5
+})
