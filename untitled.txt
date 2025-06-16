@@ -2,25 +2,35 @@ debugX = true
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
+-- Create the main window
 local Window = Rayfield:CreateWindow({
-   Name = "Kryp Paid Hub",
-   Icon = 4483362458,
+   Name = "Kryp Paid",
+   Icon = 0,
    LoadingTitle = "Kryp Paid Interface",
-   LoadingSubtitle = "Powered by Rayfield",
-   Theme = "Dark",
+   LoadingSubtitle = "by Shaman Team",
+   Theme = "Default",
    DisableRayfieldPrompts = false,
    DisableBuildWarnings = false,
    ConfigurationSaving = {
       Enabled = true,
-      FolderName = "KrypPaid",
-      FileName = "KrypConfig"
+      FolderName = nil,
+      FileName = "KrypPaidConfig"
    },
    Discord = {
-      Enabled = true,
-      Invite = "your_discord_invite_code",
+      Enabled = false,
+      Invite = "",
       RememberJoins = true
    },
-   KeySystem = false
+   KeySystem = false,
+   KeySettings = {
+      Title = "Kryp Paid Key System",
+      Subtitle = "Enter your key",
+      Note = "Obtain your key from the official website.",
+      FileName = "KrypPaidKey",
+      SaveKey = true,
+      GrabKeyFromSite = false,
+      Key = {"Hello"}
+   }
 })
 
 -- Services
@@ -115,6 +125,9 @@ local currentShader = nil
 local skyColorConnection = nil
 local BallPauseEnabled = false
 local BallPauseDistanceThreshold = 10
+
+-- Flags Table
+local Flags = {}
 
 -- Remote Detection
 task.spawn(function()
@@ -689,25 +702,31 @@ local function pauseBall()
     end
 end
 
--- Auto Spam and Manual Spam Variables
-local AutoSpamActive = false
-local AutoManualSpamEnabled = false
-local ManualSpamActive = false
+-- UI Setup with Tabs
+local BlatantTab = Window:CreateTab("Blatant")
+local PlayerTab = Window:CreateTab("Player")
+local VisualsTab = Window:CreateTab("Visuals")
+local MiscTab = Window:CreateTab("Misc")
+local CreditsTab = Window:CreateTab("Credits")
+local UtilityTab = Window:CreateTab("Utility") -- New tab for additional features
+local CombatTab = Window:CreateTab("Combat")   -- New tab for combat enhancements
 
--- New UI Setup with Rayfield
-local BlatantTab = Window:CreateTab("Blatant", 4483362458)
-local CombatTab = Window:CreateTab("Combat", 4483362458) -- New tab for combat-related features
-local PlayerTab = Window:CreateTab("Player", 4483362458)
-local VisualsTab = Window:CreateTab("Visuals", 4483362458)
-local MiscTab = Window:CreateTab("Misc", 4483362458)
-local SettingsTab = Window:CreateTab("Settings", 4483362458) -- New tab for settings
-local CreditsTab = Window:CreateTab("Credits", 4483362458)
+-- Credits Tab
+local CreditsMainSection = CreditsTab:CreateSection("Main Credits")
+CreditsTab:CreateLabel("Original Script: Kryp Paid Team")
+CreditsTab:CreateLabel("UI Conversion: Shaman Team")
+
+local CreditsUISection = CreditsTab:CreateSection("UI Credits")
+CreditsTab:CreateLabel("Rain-Design: Shaman UI Library")
+
+local CreditsHelpSection = CreditsTab:CreateSection("Helping Credits")
+CreditsTab:CreateLabel("Community: Testing & Feedback")
 
 -- Blatant Tab
 local AutoParrySection = BlatantTab:CreateSection("Auto Parry")
-AutoParrySection:CreateLabel("Welcome, " .. LocalPlayer.DisplayName .. " to Kryp Paid!")
+BlatantTab:CreateLabel("Welcome, "..LocalPlayer.DisplayName.." to Kryp Paid!")
 
-AutoParrySection:CreateToggle({
+BlatantTab:CreateToggle({
    Name = "Enabled",
    CurrentValue = false,
    Callback = function(value)
@@ -733,7 +752,7 @@ AutoParrySection:CreateToggle({
                local cappedSpeedDiff = math.min(math.max(Speed - 9.5, 0), 650)
                local speed_divisor_base = 2.4 + cappedSpeedDiff * 0.002
                local effectiveMultiplier = Speed_Divisor_Multiplier
-               if Rayfield:GetFlag("RandomParryAccuracy") then
+               if Flags.RandomParryAccuracy then
                   if Speed < 200 then
                      effectiveMultiplier = 0.7 + (math.random(40, 100) - 1) * (0.35 / 99)
                   else
@@ -743,7 +762,7 @@ AutoParrySection:CreateToggle({
                local speed_divisor = speed_divisor_base * effectiveMultiplier
                local Parry_Accuracy = Ping_Threshold + math.max(Speed / speed_divisor, 9.5)
                local Curved = Auto_Parry.Is_Curved()
-               if Phantom and LocalPlayer.Character:FindFirstChild('ParryHighlight') and Rayfield:GetFlag("PhantomDetection") then
+               if Phantom and LocalPlayer.Character:FindFirstChild('ParryHighlight') and Flags.PhantomDetection then
                   ContextActionService:BindAction('BlockPlayerMovement', BlockMovement, false, Enum.KeyCode.W, Enum.KeyCode.A, Enum.KeyCode.S, Enum.KeyCode.D, Enum.UserInputType.Touch)
                   LocalPlayer.Character.Humanoid.WalkSpeed = 36
                   LocalPlayer.Character.Humanoid:MoveTo(Ball.Position)
@@ -789,16 +808,16 @@ AutoParrySection:CreateToggle({
                if Singularity_Cape then
                   return
                end
-               if Rayfield:GetFlag("InfinityDetection") and Infinity then
+               if Flags.InfinityDetection and Infinity then
                   return
                end
                if Ball_Target == tostring(LocalPlayer) and Distance <= Parry_Accuracy then
-                  if Rayfield:GetFlag("AutoAbility") and AutoAbility() then
+                  if Flags.AutoAbility and AutoAbility() then
                      return
                   end
                end
                if Ball_Target == tostring(LocalPlayer) and Distance <= Parry_Accuracy then
-                  if Rayfield:GetFlag("CooldownProtection") and cooldownProtection() then
+                  if Flags.CooldownProtection and cooldownProtection() then
                      return
                   end
                   local Parry_Time = os.clock()
@@ -806,7 +825,7 @@ AutoParrySection:CreateToggle({
                   if Time_View > 0.5 then
                      Auto_Parry.Parry_Animation()
                   end
-                  if Rayfield:GetFlag("AutoParryKeypress") then
+                  if Flags.AutoParryKeypress then
                      VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, nil)
                   else
                      Auto_Parry.Parry(Selected_Parry_Type)
@@ -830,10 +849,11 @@ AutoParrySection:CreateToggle({
    end
 })
 
-AutoParrySection:CreateSlider({
+BlatantTab:CreateSlider({
    Name = "Parry Accuracy",
    Range = {1, 100},
    Increment = 1,
+   Suffix = "%",
    CurrentValue = 100,
    Callback = function(value)
       Speed_Divisor_Multiplier = 0.7 + (value - 1) * (0.35 / 99)
@@ -851,7 +871,7 @@ local parryTypeMap = {
    ["Random Target"] = "RandomTarget"
 }
 
-AutoParrySection:CreateDropdown({
+BlatantTab:CreateDropdown({
    Name = "Curve Type",
    Options = {"Camera", "Random", "Backwards", "Straight", "High", "Left", "Right", "Random Target"},
    CurrentOption = "Camera",
@@ -860,56 +880,63 @@ AutoParrySection:CreateDropdown({
    end
 })
 
-AutoParrySection:CreateToggle({
+BlatantTab:CreateToggle({
    Name = "Random Parry Accuracy",
    CurrentValue = false,
-   Flag = "RandomParryAccuracy",
-   Callback = function(value) end
+   Callback = function(value)
+      Flags.RandomParryAccuracy = value
+   end
 })
 
-AutoParrySection:CreateToggle({
+BlatantTab:CreateToggle({
    Name = "Infinity Detection",
    CurrentValue = false,
-   Flag = "InfinityDetection",
-   Callback = function(value) end
+   Callback = function(value)
+      Flags.InfinityDetection = value
+   end
 })
 
-AutoParrySection:CreateToggle({
+BlatantTab:CreateToggle({
    Name = "Keypress",
    CurrentValue = false,
-   Flag = "AutoParryKeypress",
-   Callback = function(value) end
+   Callback = function(value)
+      Flags.AutoParryKeypress = value
+   end
 })
 
-AutoParrySection:CreateToggle({
+BlatantTab:CreateToggle({
    Name = "Phantom Detection",
    CurrentValue = false,
-   Flag = "PhantomDetection",
-   Callback = function(value) end
+   Callback = function(value)
+      Flags.PhantomDetection = value
+   end
 })
 
-AutoParrySection:CreateToggle({
+BlatantTab:CreateToggle({
    Name = "Auto Ability",
    CurrentValue = false,
-   Flag = "AutoAbility",
-   Callback = function(value) end
+   Callback = function(value)
+      Flags.AutoAbility = value
+   end
 })
 
-AutoParrySection:CreateToggle({
+BlatantTab:CreateToggle({
    Name = "Cooldown Protection",
    CurrentValue = false,
-   Flag = "CooldownProtection",
-   Callback = function(value) end
+   Callback = function(value)
+      Flags.CooldownProtection = value
+   end
 })
 
 local AutoSpamParrySection = BlatantTab:CreateSection("Auto Spam Parry")
+local AutoSpamActive = false
 
 local function toggleAutoSpam(activate)
    AutoSpamActive = activate
    if activate then
       if not Connections_Manager['Auto Spam'] then
          Connections_Manager['Auto Spam'] = RunService.Heartbeat:Connect(function()
-            if Rayfield:GetFlag("SpamParryKeypress") then
+            if Flags.SpamParryKeypress then
                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, game)
                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.F, false, game)
             else
@@ -970,7 +997,7 @@ local function checkAutoSpam()
    end
 end
 
-AutoSpamParrySection:CreateToggle({
+BlatantTab:CreateToggle({
    Name = "Enabled",
    CurrentValue = false,
    Callback = function(value)
@@ -988,32 +1015,36 @@ AutoSpamParrySection:CreateToggle({
    end
 })
 
-AutoSpamParrySection:CreateDropdown({
+BlatantTab:CreateDropdown({
    Name = "Parry Type",
    Options = {"Legit", "Blatant"},
    CurrentOption = "Legit",
-   Callback = function(value) end
+   Callback = function(value)
+      -- Handle parry type if needed
+   end
 })
 
-AutoSpamParrySection:CreateSlider({
+BlatantTab:CreateSlider({
    Name = "Parry Threshold",
    Range = {0, 5},
    Increment = 0.1,
+   Suffix = "",
    CurrentValue = 2.5,
    Callback = function(value)
       ParryThreshold = value
    end
 })
 
-AutoSpamParrySection:CreateToggle({
+BlatantTab:CreateToggle({
    Name = "Spam Parry Keypress",
    CurrentValue = false,
-   Flag = "SpamParryKeypress",
-   Callback = function(value) end
+   Callback = function(value)
+      Flags.SpamParryKeypress = value
+   end
 })
 
 if not isMobile then
-   AutoSpamParrySection:CreateToggle({
+   BlatantTab:CreateToggle({
       Name = "Animation Fix",
       CurrentValue = false,
       Callback = function(value)
@@ -1063,6 +1094,8 @@ if not isMobile then
 end
 
 local ManualSpamSection = BlatantTab:CreateSection("Manual Spam")
+local AutoManualSpamEnabled = false
+local ManualSpamActive = false
 
 local function toggleManualSpam(activate)
    ManualSpamActive = activate
@@ -1136,7 +1169,7 @@ local function checkAutoManualSpam()
    end
 end
 
-ManualSpamSection:CreateButton({
+BlatantTab:CreateButton({
    Name = "Toggle Automatically",
    Callback = function()
       AutoManualSpamEnabled = not AutoManualSpamEnabled
@@ -1164,10 +1197,9 @@ ManualSpamSection:CreateButton({
    end
 })
 
-ManualSpamSection:CreateToggle({
+BlatantTab:CreateToggle({
    Name = "Manual Spam UI",
    CurrentValue = false,
-   Flag = "ManualSpamUI",
    Callback = function(value)
       if value then
          if not CoreGui:FindFirstChild("ManualSpamUI") then
@@ -1240,8 +1272,7 @@ ManualSpamSection:CreateToggle({
 })
 
 local BallPauseSection = BlatantTab:CreateSection("Ball Pause")
-
-BallPauseSection:CreateToggle({
+BlatantTab:CreateToggle({
    Name = "Enabled",
    CurrentValue = false,
    Callback = function(value)
@@ -1257,19 +1288,8 @@ BallPauseSection:CreateToggle({
    end
 })
 
-BallPauseSection:CreateSlider({
-   Name = "Distance Threshold",
-   Range = {5, 20},
-   Increment = 1,
-   CurrentValue = 10,
-   Callback = function(value)
-      BallPauseDistanceThreshold = value
-   end
-})
-
 local LobbyAPSection = BlatantTab:CreateSection("Lobby Auto Parry")
-
-LobbyAPSection:CreateToggle({
+BlatantTab:CreateToggle({
    Name = "Enabled",
    CurrentValue = false,
    Callback = function(value)
@@ -1291,13 +1311,13 @@ LobbyAPSection:CreateToggle({
             local LobbyAPcappedSpeedDiff = math.min(math.max(Speed - 9.5, 0), 650)
             local LobbyAPspeed_divisor_base = 2.4 + LobbyAPcappedSpeedDiff * 0.002
             local LobbyAPeffectiveMultiplier = LobbyAP_Speed_Divisor_Multiplier
-            if Rayfield:GetFlag("LobbyAPRandomParryAccuracy") then
+            if Flags.LobbyAPRandomParryAccuracy then
                LobbyAPeffectiveMultiplier = 0.7 + (math.random(1, 100) - 1) * (0.35 / 99)
             end
             local LobbyAPspeed_divisor = LobbyAPspeed_divisor_base * LobbyAPeffectiveMultiplier
             local LobbyAPParry_Accuracys = Ping + math.max(Speed / LobbyAPspeed_divisor, 9.5)
             if Ball_Target == tostring(LocalPlayer) and Distance <= LobbyAPParry_Accuracys then
-               if Rayfield:GetFlag("LobbyAPKeypress") then
+               if Flags.LobbyAPKeypress then
                   VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, game)
                else
                   Auto_Parry.Parry(Selected_Parry_Type)
@@ -1319,94 +1339,36 @@ LobbyAPSection:CreateToggle({
    end
 })
 
-LobbyAPSection:CreateSlider({
+BlatantTab:CreateSlider({
    Name = "Parry Accuracy",
    Range = {1, 100},
    Increment = 1,
+   Suffix = "%",
    CurrentValue = 100,
    Callback = function(value)
       LobbyAP_Speed_Divisor_Multiplier = 0.7 + (value - 1) * (0.35 / 99)
    end
 })
 
-LobbyAPSection:CreateToggle({
+BlatantTab:CreateToggle({
    Name = "Random Parry Accuracy",
    CurrentValue = false,
-   Flag = "LobbyAPRandomParryAccuracy",
-   Callback = function(value) end
-})
-
-LobbyAPSection:CreateToggle({
-   Name = "Keypress",
-   CurrentValue = false,
-   Flag = "LobbyAPKeypress",
-   Callback = function(value) end
-})
-
--- Combat Tab (New)
-local CombatEnhancementsSection = CombatTab:CreateSection("Combat Enhancements")
-
--- New Feature: Auto Dodge
-local AutoDodgeEnabled = false
-CombatEnhancementsSection:CreateToggle({
-   Name = "Auto Dodge",
-   CurrentValue = false,
    Callback = function(value)
-      AutoDodgeEnabled = value
-      if value then
-         Connections_Manager['Auto Dodge'] = RunService.Heartbeat:Connect(function()
-            local Ball = Auto_Parry.Get_Ball()
-            if not Ball then return end
-            local Zoomies = Ball:FindFirstChild('zoomies')
-            if not Zoomies then return end
-            local Ball_Target = Ball:GetAttribute('target')
-            if Ball_Target ~= tostring(LocalPlayer) then return end
-            local Distance = (LocalPlayer.Character.PrimaryPart.Position - Ball.Position).Magnitude
-            if Distance < 15 then
-               local Direction = (LocalPlayer.Character.PrimaryPart.Position - Ball.Position).Unit
-               LocalPlayer.Character.Humanoid:MoveTo(LocalPlayer.Character.PrimaryPart.Position + Direction * 20)
-            end
-         end)
-      else
-         if Connections_Manager['Auto Dodge'] then
-            Connections_Manager['Auto Dodge']:Disconnect()
-            Connections_Manager['Auto Dodge'] = nil
-         end
-      end
+      Flags.LobbyAPRandomParryAccuracy = value
    end
 })
 
--- New Feature: Auto Counter
-local AutoCounterEnabled = false
-CombatEnhancementsSection:CreateToggle({
-   Name = "Auto Counter",
+BlatantTab:CreateToggle({
+   Name = "Keypress",
    CurrentValue = false,
    Callback = function(value)
-      AutoCounterEnabled = value
-      if value then
-         Connections_Manager['Auto Counter'] = Workspace.Balls.ChildAdded:Connect(function(ball)
-            if ball:GetAttribute("realBall") and ball:GetAttribute("target") == tostring(LocalPlayer) then
-               task.delay(0.1, function()
-                  if Auto_Parry.Parry(Selected_Parry_Type) then
-                     VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Q, false, game)
-                     VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Q, false, game)
-                  end
-               end)
-            end
-         end)
-      else
-         if Connections_Manager['Auto Counter'] then
-            Connections_Manager['Auto Counter']:Disconnect()
-            Connections_Manager['Auto Counter'] = nil
-         end
-      end
+      Flags.LobbyAPKeypress = value
    end
 })
 
 -- Player Tab
 local SpeedSection = PlayerTab:CreateSection("Speed")
-
-SpeedSection:CreateToggle({
+PlayerTab:CreateToggle({
    Name = "Enabled",
    CurrentValue = false,
    Callback = function(value)
@@ -1430,10 +1392,11 @@ SpeedSection:CreateToggle({
    end
 })
 
-SpeedSection:CreateSlider({
+PlayerTab:CreateSlider({
    Name = "Speed",
    Range = {36, 200},
    Increment = 1,
+   Suffix = " studs/sec",
    CurrentValue = 36,
    Callback = function(value)
       StrafeSpeed = value
@@ -1441,34 +1404,27 @@ SpeedSection:CreateSlider({
 })
 
 local SpinbotSection = PlayerTab:CreateSection("Spinbot")
-
-SpinbotSection:CreateToggle({
+PlayerTab:CreateToggle({
    Name = "Enabled",
    CurrentValue = false,
-   Flag = "Spinbot",
    Callback = function(value)
+      getgenv().spin = value
       if value then
-         getgenv().spin = true
          getgenv().spinSpeed = getgenv().spinSpeed or 1
-         local Players = game:GetService("Players")
-         local RunService = game:GetService("RunService")
-         local Client = Players.LocalPlayer
-         local function spinCharacter()
-            while getgenv().spin do
-               RunService.Heartbeat:Wait()
-               local char = Client.Character
-               local funcHRP = char and char:FindFirstChild("HumanoidRootPart")
-               if char and funcHRP then
-                  funcHRP.CFrame *= CFrame.Angles(0, getgenv().spinSpeed, 0)
-               end
-            end
-         end
          if not getgenv().spinThread then
-            getgenv().spinThread = coroutine.create(spinCharacter)
+            getgenv().spinThread = coroutine.create(function()
+               while getgenv().spin do
+                  RunService.Heartbeat:Wait()
+                  local char = LocalPlayer.Character
+                  local funcHRP = char and char:FindFirstChild("HumanoidRootPart")
+                  if char and funcHRP then
+                     funcHRP.CFrame *= CFrame.Angles(0, getgenv().spinSpeed, 0)
+                  end
+               end
+            end)
             coroutine.resume(getgenv().spinThread)
          end
       else
-         getgenv().spin = false
          if getgenv().spinThread then
             getgenv().spinThread = nil
          end
@@ -1476,10 +1432,11 @@ SpinbotSection:CreateToggle({
    end
 })
 
-SpinbotSection:CreateSlider({
+PlayerTab:CreateSlider({
    Name = "Speed",
    Range = {1, 100},
    Increment = 1,
+   Suffix = " deg/sec",
    CurrentValue = 1,
    Callback = function(value)
       getgenv().spinSpeed = math.rad(value)
@@ -1487,25 +1444,22 @@ SpinbotSection:CreateSlider({
 })
 
 local FieldOfViewSection = PlayerTab:CreateSection("Field of View")
-
-FieldOfViewSection:CreateToggle({
+PlayerTab:CreateToggle({
    Name = "Enabled",
    CurrentValue = false,
-   Flag = "CameraEnabled",
    Callback = function(value)
-      local Camera = Workspace.CurrentCamera
       if value then
          getgenv().CameraFOV = getgenv().CameraFOV or 70
-         Camera.FieldOfView = getgenv().CameraFOV
+         Workspace.CurrentCamera.FieldOfView = getgenv().CameraFOV
          if not getgenv().FOVLoop then
             getgenv().FOVLoop = RunService.RenderStepped:Connect(function()
-               if Rayfield:GetFlag("CameraEnabled") then
-                  Camera.FieldOfView = getgenv().CameraFOV
+               if value then
+                  Workspace.CurrentCamera.FieldOfView = getgenv().CameraFOV
                end
             end)
          end
       else
-         Camera.FieldOfView = 70
+         Workspace.CurrentCamera.FieldOfView = 70
          if getgenv().FOVLoop then
             getgenv().FOVLoop:Disconnect()
             getgenv().FOVLoop = nil
@@ -1514,35 +1468,30 @@ FieldOfViewSection:CreateToggle({
    end
 })
 
-FieldOfViewSection:CreateSlider({
+PlayerTab:CreateSlider({
    Name = "FOV",
    Range = {50, 150},
    Increment = 1,
+   Suffix = " degrees",
    CurrentValue = 70,
    Callback = function(value)
       getgenv().CameraFOV = value
-      if Rayfield:GetFlag("CameraEnabled") then
+      if Workspace.CurrentCamera.FieldOfView ~= value then
          Workspace.CurrentCamera.FieldOfView = value
       end
    end
 })
 
 local PlayerCosmeticsSection = PlayerTab:CreateSection("Player Cosmetics")
-
 _G.PlayerCosmeticsCleanup = {}
 
-PlayerCosmeticsSection:CreateToggle({
+PlayerTab:CreateToggle({
    Name = "Korblox/Headless",
    CurrentValue = false,
    Callback = function(value)
-      local players = game:GetService("Players")
-      local lp = players.LocalPlayer
       local function applyKorblox(character)
          local rightLeg = character:FindFirstChild("RightLeg") or character:FindFirstChild("Right Leg")
-         if not rightLeg then
-            warn("Right leg not found on character")
-            return
-         end
+         if not rightLeg then return end
          for _, child in pairs(rightLeg:GetChildren()) do
             if child:IsA("SpecialMesh") then
                child:Destroy()
@@ -1608,11 +1557,9 @@ PlayerCosmeticsSection:CreateToggle({
       end
       if value then
          CosmeticsActive = true
-         getgenv().Config = {
-            Headless = true
-         }
-         if lp.Character then
-            local head = lp.Character:FindFirstChild("Head")
+         getgenv().Config = { Headless = true }
+         if LocalPlayer.Character then
+            local head = LocalPlayer.Character:FindFirstChild("Head")
             if head and getgenv().Config.Headless then
                _G.PlayerCosmeticsCleanup.headTransparency = head.Transparency
                local decal = head:FindFirstChildOfClass("Decal")
@@ -1621,10 +1568,10 @@ PlayerCosmeticsSection:CreateToggle({
                   _G.PlayerCosmeticsCleanup.faceDecalName = decal.Name
                end
             end
-            saveRightLegProperties(lp.Character)
-            applyKorblox(lp.Character)
+            saveRightLegProperties(LocalPlayer.Character)
+            applyKorblox(LocalPlayer.Character)
          end
-         _G.PlayerCosmeticsCleanup.characterAddedConn = lp.CharacterAdded:Connect(function(char)
+         _G.PlayerCosmeticsCleanup.characterAddedConn = LocalPlayer.CharacterAdded:Connect(function(char)
             local head = char:FindFirstChild("Head")
             if head and getgenv().Config.Headless then
                _G.PlayerCosmeticsCleanup.headTransparency = head.Transparency
@@ -1640,7 +1587,7 @@ PlayerCosmeticsSection:CreateToggle({
          if getgenv().Config.Headless then
             headLoop = task.spawn(function()
                while CosmeticsActive do
-                  local char = lp.Character
+                  local char = LocalPlayer.Character
                   if char then
                      local head = char:FindFirstChild("Head")
                      if head then
@@ -1665,7 +1612,7 @@ PlayerCosmeticsSection:CreateToggle({
             task.cancel(headLoop)
             headLoop = nil
          end
-         local char = lp.Character
+         local char = LocalPlayer.Character
          if char then
             local head = char:FindFirstChild("Head")
             if head and _G.PlayerCosmeticsCleanup.headTransparency then
@@ -1684,38 +1631,9 @@ PlayerCosmeticsSection:CreateToggle({
    end
 })
 
--- New Feature: Custom Accessories
-local CustomAccessoriesSection = PlayerTab:CreateSection("Custom Accessories")
-
-CustomAccessoriesSection:CreateToggle({
-   Name = "Custom Hat",
-   CurrentValue = false,
-   Callback = function(value)
-      if value then
-         local hat = Instance.new("Accessory")
-         local handle = Instance.new("Part")
-         handle.Name = "Handle"
-         handle.Size = Vector3.new(1, 1, 1)
-         handle.Parent = hat
-         local mesh = Instance.new("SpecialMesh")
-         mesh.MeshId = "rbxassetid://123456789" -- Replace with desired hat mesh ID
-         mesh.TextureId = "rbxassetid://123456790" -- Replace with desired texture ID
-         mesh.Parent = handle
-         hat.Parent = LocalPlayer.Character
-      else
-         for _, accessory in pairs(LocalPlayer.Character:GetChildren()) do
-            if accessory:IsA("Accessory") and accessory.Name == "Accessory" then
-               accessory:Destroy()
-            end
-         end
-      end
-   end
-})
-
 -- Visuals Tab
 local ESPSection = VisualsTab:CreateSection("ESP")
-
-ESPSection:CreateToggle({
+VisualsTab:CreateToggle({
    Name = "Enabled",
    CurrentValue = false,
    Callback = function(value)
@@ -1757,8 +1675,7 @@ ESPSection:CreateToggle({
 })
 
 local NameTagsSection = VisualsTab:CreateSection("Name Tags")
-
-NameTagsSection:CreateToggle({
+VisualsTab:CreateToggle({
    Name = "Enabled",
    CurrentValue = false,
    Callback = function(value)
@@ -1826,8 +1743,26 @@ NameTagsSection:CreateToggle({
 })
 
 local ChamsSection = VisualsTab:CreateSection("Chams")
+VisualsTab:CreateToggle({
+   Name = "Enabled",
+   CurrentValue = false,
+   Callback = function(value)
+      chamsEnabled = value
+      if value then
+         for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+               for _, part in pairs(player.Character:GetDescendants()) do
+                  if part:IsA("MeshPart") or part:IsA("Part") then
+                     local cham = Instance.new("SurfaceGui")
+                     cham.Name = "Cham"
+                     cham.AlwaysOnTop = true
+                     cham.Adornee = part
+                     cham.Parent = part
 
-frame.BorderSizePixel = 0
+                     local frame = Instance.new("Frame")
+                     frame.Size = UDim2.new(1, 0, 1, 0)
+                     frame.BackgroundColor3 = Color3.new(0, 1, 0)
+                     frame.BackgroundTransparency = 0.5
                      frame.Parent = cham
 
                      chamsConnections[part] = cham
@@ -1850,7 +1785,6 @@ frame.BorderSizePixel = 0
                         frame.Size = UDim2.new(1, 0, 1, 0)
                         frame.BackgroundColor3 = Color3.new(0, 1, 0)
                         frame.BackgroundTransparency = 0.5
-                        frame.BorderSizePixel = 0
                         frame.Parent = cham
 
                         chamsConnections[part] = cham
@@ -1873,39 +1807,27 @@ frame.BorderSizePixel = 0
 })
 
 local FullbrightSection = VisualsTab:CreateSection("Fullbright")
-
-FullbrightSection:CreateToggle({
+VisualsTab:CreateToggle({
    Name = "Enabled",
    CurrentValue = false,
    Callback = function(value)
       fullbrightEnabled = value
       if value then
          Lighting.Brightness = 2
-         Lighting.Ambient = Color3.fromRGB(255, 255, 255)
-         Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
-         Lighting.FogEnd = 100000
-         Connections_Manager['Fullbright'] = RunService.RenderStepped:Connect(function()
-            Lighting.Brightness = 2
-            Lighting.Ambient = Color3.fromRGB(255, 255, 255)
-            Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
-            Lighting.FogEnd = 100000
-         end)
+         Lighting.Ambient = Color3.new(1, 1, 1)
+         Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
+         Lighting.FogEnd = math.huge
       else
          Lighting.Brightness = originalLighting.Brightness
-         Lighting.Ambient = originalLighting.Ambient
+         Lighting.A fugient = originalLighting.Ambient
          Lighting.OutdoorAmbient = originalLighting.OutdoorAmbient
          Lighting.FogEnd = originalLighting.FogEnd
-         if Connections_Manager['Fullbright'] then
-            Connections_Manager['Fullbright']:Disconnect()
-            Connections_Manager['Fullbright'] = nil
-         end
       end
    end
 })
 
 local CrosshairSection = VisualsTab:CreateSection("Crosshair")
-
-CrosshairSection:CreateToggle({
+VisualsTab:CreateToggle({
    Name = "Enabled",
    CurrentValue = false,
    Callback = function(value)
@@ -1917,25 +1839,17 @@ CrosshairSection:CreateToggle({
             crosshairGui.ResetOnSpawn = false
             crosshairGui.Parent = CoreGui
 
-            local centerFrame = Instance.new("Frame")
-            centerFrame.Size = UDim2.new(0, 20, 0, 20)
-            centerFrame.Position = UDim2.new(0.5, -10, 0.5, -10)
-            centerFrame.BackgroundTransparency = 1
-            centerFrame.Parent = crosshairGui
+            local crosshairFrame = Instance.new("Frame")
+            crosshairFrame.Size = UDim2.new(0, 20, 0, 2)
+            crosshairFrame.Position = UDim2.new(0.5, -10, 0.5, -1)
+            crosshairFrame.BackgroundColor3 = Color3.new(1, 0, 0)
+            crosshairFrame.Parent = crosshairGui
 
-            local horizontal = Instance.new("Frame")
-            horizontal.Size = UDim2.new(0, 20, 0, 2)
-            horizontal.Position = UDim2.new(0.5, -10, 0.5, -1)
-            horizontal.BackgroundColor3 = Color3.new(1, 0, 0)
-            horizontal.BorderSizePixel = 0
-            horizontal.Parent = centerFrame
-
-            local vertical = Instance.new("Frame")
-            vertical.Size = UDim2.new(0, 2, 0, 20)
-            vertical.Position = UDim2.new(0.5, -1, 0.5, -10)
-            vertical.BackgroundColor3 = Color3.new(1, 0, 0)
-            vertical.BorderSizePixel = 0
-            vertical.Parent = centerFrame
+            local crosshairFrame2 = Instance.new("Frame")
+            crosshairFrame2.Size = UDim2.new(0, 2, 0, 20)
+            crosshairFrame2.Position = UDim2.new(0.5, -1, 0.5, -10)
+            crosshairFrame2.BackgroundColor3 = Color3.new(1, 0, 0)
+            crosshairFrame2.Parent = crosshairGui
          end
       else
          if crosshairGui then
@@ -1946,90 +1860,55 @@ CrosshairSection:CreateToggle({
    end
 })
 
-local SkyboxSection = VisualsTab:CreateSection("Skybox")
-
-SkyboxSection:CreateDropdown({
-   Name = "Select Skybox",
-   Options = {"None", "Midnight", "Space", "Galaxy", "Christmas"},
-   CurrentOption = "None",
+local EnvironmentSection = VisualsTab:CreateSection("Environment")
+VisualsTab:CreateDropdown({
+   Name = "Skybox",
+   Options = {"Midnight", "Space", "Galaxy", "Christmas"},
+   CurrentOption = "Midnight",
    Callback = function(value)
-      if value == "None" then
-         if currentSkybox then
-            currentSkybox:Destroy()
-            currentSkybox = nil
-         end
-      else
-         applySkybox(value)
-      end
+      applySkybox(value)
    end
 })
 
-local ShaderSection = VisualsTab:CreateSection("Shader")
-
-ShaderSection:CreateDropdown({
-   Name = "Select Shader",
-   Options = {"None", "Mid Purple Day", "Mid Pink Day", "Mid Day", "Evening", "Night"},
-   CurrentOption = "None",
+VisualsTab:CreateDropdown({
+   Name = "Shaders",
+   Options = {"Mid Purple Day", "Mid Pink Day", "Mid Day", "Evening", "Night"},
+   CurrentOption = "Mid Purple Day",
    Callback = function(value)
-      if value == "None" then
-         if currentShader then
-            currentShader:Destroy()
-            currentShader = nil
-         end
-      else
-         applyShader(value)
-      end
+      applyShader(value)
    end
 })
 
-local SkyColorSection = VisualsTab:CreateSection("Sky Color")
-
-SkyColorSection:CreateColorPicker({
+VisualsTab:CreateColorPicker({
    Name = "Sky Color",
-   Color = Color3.fromRGB(135, 206, 235),
+   Color = Color3.new(1, 1, 1),
    Callback = function(value)
       applySkyColor(value)
    end
 })
 
-SkyColorSection:CreateButton({
-   Name = "Reset Sky Color",
-   Callback = function()
-      if skyColorConnection then
-         skyColorConnection:Disconnect()
-         skyColorConnection = nil
-      end
-      Lighting.Ambient = originalLighting.Ambient
-      Lighting.OutdoorAmbient = originalLighting.OutdoorAmbient
-   end
-})
-
 -- Misc Tab
 local AnimationsSection = MiscTab:CreateSection("Animations")
-
-AnimationsSection:CreateDropdown({
-   Name = "Play Animation",
+MiscTab:CreateDropdown({
+   Name = "Emote",
    Options = Emotes_Data,
-   CurrentOption = "None",
+   CurrentOption = Emotes_Data[1],
    Callback = function(value)
-      if value ~= "None" then
-         Auto_Parry.Play_Animation(value)
-      end
+      Auto_Parry.Play_Animation(value)
    end
 })
 
-local MusicSection = MiscTab:CreateSection("Music")
-
-MusicSection:CreateTextbox({
+local MusicSection = MiscTab:CreateSection("Music Player")
+MiscTab:CreateInput({
    Name = "Music ID",
-   CurrentText = "",
    PlaceholderText = "Enter Music ID",
+   RemoveTextAfterFocusLost = false,
    Callback = function(value)
       playMusic(value)
    end
 })
 
-MusicSection:CreateButton({
+MiscTab:CreateButton({
    Name = "Pause Music",
    Callback = function()
       pauseMusic()
@@ -2037,20 +1916,23 @@ MusicSection:CreateButton({
 })
 
 local HitSoundSection = MiscTab:CreateSection("Hit Sound")
-
-HitSoundSection:CreateToggle({
+MiscTab:CreateToggle({
    Name = "Enabled",
    CurrentValue = false,
    Callback = function(value)
       hit_Sound_Enabled = value
       if value then
-         Connections_Manager['Hit Sound'] = Workspace.Balls.ChildRemoved:Connect(function(ball)
-            if ball:GetAttribute("realBall") and hit_Sound_Enabled then
+         Connections_Manager['Hit Sound'] = Workspace.Balls.ChildAdded:Connect(function(ball)
+            if ball:IsA("BasePart") and ball:GetAttribute("realBall") then
                local sound = Instance.new("Sound")
-               sound.SoundId = "rbxassetid://123456789" -- Replace with desired hit sound ID
-               sound.Parent = Workspace
-               sound:Play()
-               Debris:AddItem(sound, 2)
+               sound.SoundId = "rbxassetid://9114317057"
+               sound.Volume = 1
+               sound.Parent = ball
+               ball:GetAttributeChangedSignal("target"):Connect(function()
+                  if ball:GetAttribute("target") == tostring(LocalPlayer) then
+                     sound:Play()
+                  end
+               end)
             end
          end)
       else
@@ -2062,111 +1944,141 @@ HitSoundSection:CreateToggle({
    end
 })
 
--- Settings Tab
-local ConfigSection = SettingsTab:CreateSection("Configuration")
+-- New Utility Tab
+local UtilitySection = UtilityTab:CreateSection("Utility Features")
 
-ConfigSection:CreateButton({
-   Name = "Save Config",
+UtilityTab:CreateButton({
+   Name = "Rejoin Server",
    Callback = function()
-      Rayfield:SaveConfiguration()
-      Rayfield:Notify({
-         Title = "Configuration Saved",
-         Content = "Your settings have been saved successfully.",
-         Duration = 3
-      })
+      game:GetService("TeleportService"):Teleport(game.PlaceId, LocalPlayer)
    end
 })
 
-ConfigSection:CreateButton({
-   Name = "Load Config",
-   Callback = function()
-      Rayfield:LoadConfiguration()
-      Rayfield:Notify({
-         Title = "Configuration Loaded",
-         Content = "Your settings have been loaded successfully.",
-         Duration = 3
-      })
-   end
-})
-
-local KeybindSection = SettingsTab:CreateSection("Keybinds")
-
-KeybindSection:CreateKeybind({
-   Name = "Toggle UI",
-   CurrentKeybind = Enum.KeyCode.RightControl,
-   Callback = function()
-      Rayfield:Toggle()
-   end
-})
-
--- Credits Tab
-local CreditsSection = CreditsTab:CreateSection("Credits")
-
-CreditsSection:CreateLabel("Script Developer: Kryp")
-CreditsSection:CreateLabel("UI Library: Rayfield")
-CreditsSection:CreateLabel("Special Thanks: xAI for Grok 3")
-CreditsSection:CreateButton({
-   Name = "Join Discord",
-   Callback = function()
-      Rayfield:Notify({
-         Title = "Join Our Discord",
-         Content = "Check the Discord invite in the UI settings!",
-         Duration = 5
-      })
-   end
-})
-
--- Initialize Connections
-Connections_Manager['Ball Monitor'] = Workspace.Balls.ChildAdded:Connect(function(ball)
-   if ball:GetAttribute("realBall") then
-      ball:GetAttributeChangedSignal('target'):Once(function()
-         Parried = false
-         Phantom = ball:GetAttribute('target') == tostring(LocalPlayer)
-         if ball:GetAttribute('from') == tostring(LocalPlayer) then
-            Phantom = false
+UtilityTab:CreateToggle({
+   Name = "Auto Respawn",
+   CurrentValue = false,
+   Callback = function(value)
+      if value then
+         Connections_Manager['Auto Respawn'] = LocalPlayer.CharacterAdded:Connect(function()
+            if LocalPlayer.Character:FindFirstChild("Humanoid") and LocalPlayer.Character.Humanoid.Health <= 0 then
+               game:GetService("ReplicatedStorage").Remotes.Respawn:FireServer()
+            end
+         end)
+      else
+         if Connections_Manager['Auto Respawn'] then
+            Connections_Manager['Auto Respawn']:Disconnect()
+            Connections_Manager['Auto Respawn'] = nil
          end
-      end)
+      end
    end
-end)
+})
 
-Connections_Manager['Infinity Detection'] = RunService.Heartbeat:Connect(function()
-   local Ball = Auto_Parry.Get_Ball()
-   if not Ball then
-      Infinity = false
-      return
+UtilityTab:CreateInput({
+   Name = "Chat Spam Message",
+   PlaceholderText = "Enter message",
+   RemoveTextAfterFocusLost = false,
+   Callback = function(value)
+      Flags.ChatSpamMessage = value
    end
-   local Zoomies = Ball:FindFirstChild('zoomies')
-   if not Zoomies then
-      Infinity = false
-      return
-   end
-   local Ball_Velocity = Zoomies.VectorVelocity
-   local Ball_Speed = Ball_Velocity.Magnitude
-   if Ball_Speed < 10 then
-      Infinity = true
-   else
-      Infinity = false
-   end
-end)
+})
 
-Connections_Manager['Input Detection'] = UserInputService.LastInputTypeChanged:Connect(function(input)
-   Last_Input = input
-end)
+UtilityTab:CreateToggle({
+   Name = "Chat Spam",
+   CurrentValue = false,
+   Callback = function(value)
+      if value then
+         Connections_Manager['Chat Spam'] = RunService.Heartbeat:Connect(function()
+            if Flags.ChatSpamMessage then
+               game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(Flags.ChatSpamMessage, "All")
+            end
+         end)
+      else
+         if Connections_Manager['Chat Spam'] then
+            Connections_Manager['Chat Spam']:Disconnect()
+            Connections_Manager['Chat Spam'] = nil
+         end
+      end
+   end
+})
+
+-- New Combat Tab
+local CombatSection = CombatTab:CreateSection("Combat Enhancements")
+
+local aimbotEnabled = false
+CombatTab:CreateToggle({
+   Name = "Aimbot",
+   CurrentValue = false,
+   Callback = function(value)
+      aimbotEnabled = value
+      if value then
+         Connections_Manager['Aimbot'] = RunService.RenderStepped:Connect(function()
+            local closestPlayer = nil
+            local shortestDistance = math.huge
+            for _, player in pairs(Players:GetPlayers()) do
+               if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                  local distance = (LocalPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                  if distance < shortestDistance then
+                     shortestDistance = distance
+                     closestPlayer = player
+                  end
+               end
+            end
+            if closestPlayer then
+               Workspace.CurrentCamera.CFrame = CFrame.new(Workspace.CurrentCamera.CFrame.Position, closestPlayer.Character.HumanoidRootPart.Position)
+            end
+         end)
+      else
+         if Connections_Manager['Aimbot'] then
+            Connections_Manager['Aimbot']:Disconnect()
+            Connections_Manager['Aimbot'] = nil
+         end
+      end
+   end
+})
+
+CombatTab:CreateButton({
+   Name = "Kill All",
+   Callback = function()
+      for _, player in pairs(Players:GetPlayers()) do
+         if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") then
+            player.Character.Humanoid.Health = 0
+         end
+      end
+   end
+})
+
+CombatTab:CreateToggle({
+   Name = "Infinite Stamina",
+   CurrentValue = false,
+   Callback = function(value)
+      if value then
+         Connections_Manager['Infinite Stamina'] = RunService.Heartbeat:Connect(function()
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+               LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Running)
+            end
+         end)
+      else
+         if Connections_Manager['Infinite Stamina'] then
+            Connections_Manager['Infinite Stamina']:Disconnect()
+            Connections_Manager['Infinite Stamina'] = nil
+         end
+      end
+   end
+})
 
 -- Cleanup on Script End
+LocalPlayer.CharacterAdded:Connect(function(character)
+   clientCharacter = character
+   clientHumanoid = character:WaitForChild("Humanoid")
+end)
+
 game:BindToClose(function()
    for _, connection in pairs(Connections_Manager) do
       if connection then
          connection:Disconnect()
       end
    end
-   if getgenv().FOVLoop then
-      getgenv().FOVLoop:Disconnect()
-   end
-   if getgenv().spinThread then
-      getgenv().spin = false
-      getgenv().spinThread = nil
-   end
+   Connections_Manager = {}
    if musicPlayer then
       musicPlayer:Destroy()
    end
@@ -2182,45 +2094,71 @@ game:BindToClose(function()
    if crosshairGui then
       crosshairGui:Destroy()
    end
+   if espEnabled then
+      for _, highlight in pairs(espConnections) do
+         if typeof(highlight) == "Instance" then
+            highlight:Destroy()
+         elseif highlight.Disconnect then
+            highlight:Disconnect()
+         end
+      end
+   end
+   if nameTagsEnabled then
+      for _, billboard in pairs(nameTagsConnections) do
+         if typeof(billboard) == "Instance" then
+            billboard:Destroy()
+         elseif billboard.Disconnect then
+            billboard:Disconnect()
+         end
+      end
+   end
+   if chamsEnabled then
+      for _, cham in pairs(chamsConnections) do
+         if typeof(cham) == "Instance" then
+            cham:Destroy()
+         elseif cham.Disconnect then
+            cham:Disconnect()
+         end
+      end
+   end
+   if fullbrightEnabled then
+      Lighting.Brightness = originalLighting.Brightness
+      Lighting.Ambient = originalLighting.Ambient
+      Lighting.OutdoorAmbient = originalLighting.OutdoorAmbient
+      Lighting.FogEnd = originalLighting.FogEnd
+   end
+   if getgenv().spinThread then
+      getgenv().spin = false
+      getgenv().spinThread = nil
+   end
+   if getgenv().FOVLoop then
+      getgenv().FOVLoop:Disconnect()
+      getgenv().FOVLoop = nil
+   end
    if CoreGui:FindFirstChild("ManualSpamUI") then
       CoreGui:FindFirstChild("ManualSpamUI"):Destroy()
-   end
-   for _, highlight in pairs(espConnections) do
-      if typeof(highlight) == "Instance" then
-         highlight:Destroy()
-      elseif highlight.Disconnect then
-         highlight:Disconnect()
-      end
-   end
-   for _, billboard in pairs(nameTagsConnections) do
-      if typeof(billboard) == "Instance" then
-         billboard:Destroy()
-      elseif billboard.Disconnect then
-         billboard:Disconnect()
-      end
-   end
-   for _, cham in pairs(chamsConnections) do
-      if typeof(cham) == "Instance" then
-         cham:Destroy()
-      elseif cham.Disconnect then
-         cham:Disconnect()
-      end
-   end
-   if headLoop then
-      task.cancel(headLoop)
    end
    if _G.PlayerCosmeticsCleanup.characterAddedConn then
       _G.PlayerCosmeticsCleanup.characterAddedConn:Disconnect()
    end
-   Lighting.Brightness = originalLighting.Brightness
-   Lighting.Ambient = originalLighting.Ambient
-   Lighting.OutdoorAmbient = originalLighting.OutdoorAmbient
-   Lighting.FogEnd = originalLighting.FogEnd
+   if headLoop then
+      task.cancel(headLoop)
+   end
+   local char = LocalPlayer.Character
+   if char and _G.PlayerCosmeticsCleanup.headTransparency then
+      local head = char:FindFirstChild("Head")
+      if head then
+         head.Transparency = _G.PlayerCosmeticsCleanup.headTransparency
+         if _G.PlayerCosmeticsCleanup.faceDecalId then
+            local newDecal = head:FindFirstChildOfClass("Decal") or Instance.new("Decal", head)
+            newDecal.Name = _G.PlayerCosmeticsCleanup.faceDecalName or "face"
+            newDecal.Texture = _G.PlayerCosmeticsCleanup.faceDecalId
+            newDecal.Face = Enum.NormalId.Front
+         end
+      end
+      restoreRightLeg(char)
+   end
+   _G.PlayerCosmeticsCleanup = {}
 end)
 
--- Notify User of Successful Load
-Rayfield:Notify({
-   Title = "Kryp Paid Hub Loaded",
-   Content = "Welcome to Kryp Paid Hub! Enjoy the features.",
-   Duration = 5
-})
+Rayfield:LoadConfiguration()
